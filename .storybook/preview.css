@@ -1,0 +1,45 @@
+* {
+   padding: 0;
+   margin: 0;
+   box-sizing: border-box;
+   font-family: 'Adobe Ming Std'
+}
+
+html,
+body,
+#root {
+   height: 100%;
+}
+
+button {
+   font-size: 2.3rem;
+   padding: 0.25em 1.4em;
+   border-radius: 5px;
+   border: none;
+   background: #c3ccca;
+   color: white;
+   box-shadow: 0 0 0.6em -0.2em rgba(0, 0, 0, 0.733);
+   transition: box-shadow 50ms, transform 50ms;
+}
+
+button:hover {
+   /* opacity: 0.9; */
+   box-shadow: 0 0 0.5em -0.2em rgba(0, 0, 0, 0.733);
+}
+
+button:active {
+   box-shadow: 0 0 0.6em -0.2em rgba(0, 0, 0, 0.733);
+   transform: scale(0.99);
+}
+
+button:focus {
+   outline: none;
+}
+
+.deco-center {
+   height: 100%;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+}
