@@ -1,38 +1,51 @@
-import { useCallback, useRef } from 'react';
+
+import { useCallback, useRef, useEffect } from 'react';
 import { useSetState, useMountedState } from './';
-import { AsyncReturnType, AsyncFunction } from '../types';
+import { AsyncReturnType, AsyncFunction, PromiseWithCancel } from '../types';
 import { SetState } from './useSetState'
-
-interface PromiseWithCancelFn<T extends unknown> extends Promise<T> {
-	cancel?: () => void
-}
-
-type State<T extends AsyncFunction> = {
-	isPending: boolean,
-	status: 'idle' | 'pending' | 'success' | 'error' | 'cancelled',
-	error: null | Error,
-	data: null | AsyncReturnType<T>,
-	args: null | Parameters<T>
-}
 
 const useAsyncFn = function <Cb extends AsyncFunction>(
 	callback: Cb,
-): [ State<Cb>, (...args: Parameters<Cb>) => void, (reset?: boolean) => void, SetState<State<Cb>> ] {
+	defaultData: null | AsyncReturnType<Cb> = null
+) {
+
+	type ReturnTuple = [
+		{
+			isPending: boolean,
+			status: 'idle' | 'pending' | 'success' | 'error' | 'cancelled',
+			error: null | Error,
+			data: null | AsyncReturnType<Cb>,
+			args: null | Parameters<Cb>
+		},
+		(...args: Parameters<Cb>) => void,
+		(resetState?: boolean) => void,
+		SetState<{
+			isPending: boolean,
+			status: 'idle' | 'pending' | 'success' | 'error' | 'cancelled',
+			error: null | Error,
+			data: null | AsyncReturnType<Cb>,
+			args: null | Parameters<Cb>
+		}>
+	]
 
 	const callbackRef = useRef(callback)
 	const lastCallID = useRef(0)
 	const isMounted = useMountedState()
 	const cancelRequest = useRef(() => { })
 
-	const [ state, setState ] = useSetState<State<Cb>>({
+	useEffect(() => {
+		callbackRef.current = callback
+	})
+
+	const [state, setState] = useSetState<ReturnTuple[0]>({
 		isPending: false,
 		status: 'idle',
 		error: null,
-		data: null,
+		data: defaultData,
 		args: null
 	})
 
-	const execute = useCallback((...args: Parameters<Cb>) => {
+	const execute: ReturnTuple[1] = useCallback((...args: Parameters<Cb>) => {
 		const callID = ++lastCallID.current
 
 		cancelRequest.current()
@@ -43,7 +56,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 			status: 'pending',
 		})
 
-		const promise: PromiseWithCancelFn<any> = callbackRef.current(...args)
+		const promise: PromiseWithCancel<any> = callbackRef.current(...args)
 		cancelRequest.current = promise.cancel || (() => { })
 
 		promise
@@ -60,22 +73,24 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 			.catch(error => {
 				if (!isMounted() || callID !== lastCallID.current) return
 				setState({
-					error,
+					error: { ...error, name: error.name, message: error.message },
 					args,
-					data: null,
+					data: defaultData,
 					isPending: false,
 					status: 'error',
 				})
 			})
-	}, [ setState, isMounted ])
+	}, [setState, isMounted])
 
-	const cancel = useCallback((reset: boolean = false) => {
+	const cancel: ReturnTuple[2] = useCallback((resetState: boolean = false) => {
+		if (state.status !== 'pending') return
 		cancelRequest.current()
 		setState(() => {
-			return reset
+			return resetState
 				? ({
-					data: null,
+					data: defaultData,
 					args: null,
+					error: null,
 					isPending: false,
 					status: 'cancelled',
 				}) : ({
@@ -84,9 +99,9 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 				})
 
 		})
-	}, [ setState ])
+	}, [setState, state])
 
-	return [ state, execute, cancel, setState ]
+	return [state, execute, cancel, setState] as ReturnTuple
 }
 
 export default useAsyncFn;

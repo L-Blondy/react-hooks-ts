@@ -3,15 +3,29 @@ import { Promisify } from '../types'
 
 const noop = () => { }
 
-const useDebounce = <T extends ((...args: any) => any)>(
+type SomeFunction = (...args: any) => any
+
+interface DebouncedFn<T extends SomeFunction> {
+	(...args: Parameters<T>): Promisify<ReturnType<T>>
+}
+interface DebouncedFnWithCancel<T extends SomeFunction> extends DebouncedFn<T> {
+	cancel: () => void
+}
+
+const useDebounce = <T extends SomeFunction>(
 	callback: T,
 	delay: number = 0
-): [ ((...args: Parameters<T>) => Promisify<ReturnType<T>>), () => void ] => {
+): DebouncedFnWithCancel<T> => {
 
 	const callbackRef = useRef(callback)
 	const delayRef = useRef(delay)
 	const token = useRef<NodeJS.Timeout | null>(null)
 	const cancelPromiseRef = useRef(noop)
+
+	useEffect(() => {
+		callbackRef.current = callback
+		delayRef.current = delay
+	})
 
 	const cancel = () => {
 		token.current && clearTimeout(token.current)
@@ -33,16 +47,13 @@ const useDebounce = <T extends ((...args: any) => any)>(
 		return promise as Promisify<ReturnType<T>>
 	}, [])
 
-	useEffect(() => {
-		callbackRef.current = callback
-		delayRef.current = delay
-	}, [ callback, delay ])
-
 	useEffect(() => () => {
 		cancel()
-	}, [])
+	}, []);
 
-	return [ debouncedCallback, cancel ]
+	(debouncedCallback as DebouncedFnWithCancel<T>).cancel = cancel
+
+	return debouncedCallback as DebouncedFnWithCancel<T>
 }
 
 export default useDebounce

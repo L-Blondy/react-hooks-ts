@@ -12,3 +12,7 @@ export type AsyncReturnType<T> = T extends (...args: any) => Promise<any>
 export type Promisify<T> = T extends Promise<any>
 	? T
 	: Promise<T>
+
+export interface PromiseWithCancel<T> extends Promise<T> {
+	cancel?: () => void
+}

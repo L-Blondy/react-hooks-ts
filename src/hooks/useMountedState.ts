@@ -10,7 +10,7 @@ const useMountedState = () => {
 		return () => {
 			mountedRef.current = false;
 		};
-	});
+	}, []);
 
 	return get;
 }

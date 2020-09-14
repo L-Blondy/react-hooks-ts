@@ -1,25 +1,43 @@
-import { useRef } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
+import { isPromise } from '../utils'
+import { Promisify } from '../types'
+
+const pendingPromise = new Promise(() => { })
 
 const useThrottle = <T extends (...args: any) => any>(
 	callback: T,
 	throttleTime: number = 0,
 	throttleLimit: number = 1
-): T | ((...args: Parameters<T>) => void) => {
+): (...args: Parameters<T>) => Promisify<ReturnType<T>> => {
 
+	const callbackRef = useRef(callback)
+	const throttleLimitRef = useRef(throttleLimit)
+	const throttleTimeRef = useRef(throttleTime)
 	const lastCallDate = useRef(0)
 	const callsWithinTime = useRef(0)
 
-	const execute = (...args: Parameters<T>) => {
+	useEffect(() => {
+		callbackRef.current = callback
+		throttleLimitRef.current = throttleLimit
+		throttleTimeRef.current = throttleTime
+	})
+
+	const execute = useCallback((...args: Parameters<T>) => {
 		const now = Date.now()
 
-		if (callsWithinTime.current < throttleLimit) {
+		if (callsWithinTime.current < throttleLimitRef.current) {
 			lastCallDate.current = now
 			callsWithinTime.current++
-			setTimeout(() => callsWithinTime.current--, throttleTime)
-			return callback(...args)
+			setTimeout(() => callsWithinTime.current--, throttleTimeRef.current);
+			let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
+			if (!isPromise(result))
+				return Promise.resolve(result)
+			return result
 		}
-	}
-	return execute
+		return pendingPromise
+	}, [])
+
+	return execute as (...args: Parameters<T>) => Promisify<ReturnType<T>>
 }
 
 export default useThrottle;

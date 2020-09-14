@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useAsyncFn } from '../hooks'
-import fetchDummy from '../API/fetchDummy'
+import React, { useState, useEffect } from 'react'
+import { useAsync } from '../hooks'
+import fetchDummyFast from '../API/fetchDummyFast'
 
-export function UseAsyncFn() {
+interface Args {
+	options: any,
+	resetOnCancel: boolean
+}
+
+function UseAsync({ options, resetOnCancel }: Args) {
 	const [id, setId] = useState(1)
-	const [state, asyncFetchDummy, cancel, setState] = useAsyncFn(fetchDummy)
+	const [state, asyncFetchDummy, cancel, setState] = useAsync(fetchDummyFast, options)
 
 	useEffect(() => {
 		asyncFetchDummy(id)
 	}, [id, asyncFetchDummy])
+
 
 	return (
 		<>
@@ -19,7 +25,9 @@ export function UseAsyncFn() {
 			<div>status: { state.status }</div>
 			<div>isPending: { state.isPending }</div>
 			<div>error: { JSON.stringify(state.error, null, 5) }</div>
-			<button onClick={ () => cancel(true) }>Cancel</button>
+			<button onClick={ () => cancel(resetOnCancel) }>Cancel</button>
 		</>
 	)
 }
+
+export default UseAsync

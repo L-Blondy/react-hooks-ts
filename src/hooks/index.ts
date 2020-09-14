@@ -9,3 +9,4 @@ export { default as useDebounce } from './useDebounce';
 export { default as useAsyncFn } from './useAsyncFn';
 export { default as useHover } from './useHover';
 export { default as useAsync } from './useAsync';
+export { UseAsyncOptions } from './useAsync';

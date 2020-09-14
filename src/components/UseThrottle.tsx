@@ -1,35 +1,46 @@
 import React, { useState } from 'react';
 import { useThrottle } from '../hooks'
+import fetchDummy, { DummyData } from '../API/fetchDummy'
 
-export function ThrottleNormalFunction() {
-	const [ count, setCount ] = useState(0)
+export interface Args {
+	limit: number
+}
+
+export function ThrottleNormalFunction({ limit }: Args) {
+	const [count, setCount] = useState(0)
 	const increment = (count: number) => {
 		setCount(count + 1)
-		return count
+		return count + 1
 	}
-	const incrementThrottled = useThrottle(increment, 1000, 3)
+	const incrementThrottled = useThrottle(increment, 1000, limit)
+
+	const handleClick = () => {
+		incrementThrottled(count).then(count => console.log(count))
+	}
 
 	return (
-		<button onClick={() => incrementThrottled(count)}>
-			{count}
+		<button onClick={ handleClick }>
+			{ count }
 		</button>
 	)
 }
 
-export function ThrottleAsyncFunction() {
-	const [ count, setCount ] = useState(0)
+export function ThrottleAsyncFunction({ limit }: Args) {
+	const [data, setData] = useState<DummyData>()
+	const [count, setCount] = useState(1)
 
-	const APIcall = () => new Promise<number>(resolve => resolve(count + 1))
-		.then(count => {
-			setCount(count)
-			return count
+	const fetchDummyThrottled = useThrottle(fetchDummy, 1000, limit)
+
+	const handleClick = () => {
+		fetchDummyThrottled(count).then(data => {
+			setCount(count => count + 1)
+			setData(data)
 		})
-
-	const APIcallThrottled = useThrottle(APIcall, 1000, 3)
+	}
 
 	return (
-		<button onClick={APIcallThrottled} >
-			{count}
+		<button onClick={ handleClick } >
+			{ JSON.stringify(data) || 'undefined' }
 		</button>
 	)
 }
