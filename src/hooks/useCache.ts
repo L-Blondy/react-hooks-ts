@@ -16,7 +16,7 @@ const useCache = <T extends AnyFunction>(
 	const callbackRef = useRef(callback)
 	const staleTimeRef = useRef(staleTime)
 	const caseSensitiveRef = useRef(caseSensitive)
-	const cache = useRef<{ [args: string]: { result: any, updatedOn: number, isAsync: boolean } }>({})
+	const cache = useRef<{ [ args: string ]: { result: any, updatedOn: number, isAsync: boolean } }>({})
 
 	useEffect(() => {
 		callbackRef.current = callback
@@ -26,8 +26,9 @@ const useCache = <T extends AnyFunction>(
 
 	const execute = useCallback((...args: Parameters<T>) => {
 		let key = args.toString()
+
 		if (!caseSensitiveRef.current) key = key.toLowerCase()
-		const cacheContent = cache.current[key]
+		const cacheContent = cache.current[ key ]
 		const now = Date.now()
 
 		if (cacheContent && now - cacheContent.updatedOn < staleTimeRef.current) {
@@ -42,7 +43,7 @@ const useCache = <T extends AnyFunction>(
 		if (isPromise(returnValue)) {
 			return returnValue
 				.then((result: AsyncReturnType<T>) => {
-					cache.current[key] = {
+					cache.current[ key ] = {
 						result,
 						updatedOn: now,
 						isAsync: true
@@ -51,7 +52,7 @@ const useCache = <T extends AnyFunction>(
 				})
 		}
 
-		cache.current[key] = {
+		cache.current[ key ] = {
 			result: returnValue,
 			updatedOn: now,
 			isAsync: false

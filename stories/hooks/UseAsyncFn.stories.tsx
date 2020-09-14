@@ -6,3 +6,7 @@ export default {
 }
 
 export const AsyncFunction = (args) => <UseAsyncFn {...args} />
+AsyncFunction.args = {
+	useAxios: false,
+	withDataReset: false
+}

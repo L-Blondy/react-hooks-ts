@@ -16,3 +16,7 @@ export type Promisify<T> = T extends Promise<any>
 export interface PromiseWithCancel<T> extends Promise<T> {
 	cancel?: () => void
 }
+
+export interface AsyncFunctionWithCancel extends AsyncFunction {
+	cancel?: () => void
+}

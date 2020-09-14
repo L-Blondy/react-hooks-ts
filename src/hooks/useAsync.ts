@@ -1,39 +1,40 @@
 import { useAsyncFn, useDebounce, useCache, useThrottle } from './';
-import { AsyncFunction, AsyncReturnType } from '../types';
+import { AsyncFunctionWithCancel, AsyncReturnType } from '../types';
 
-const useAsync = <Cb extends AsyncFunction>(
+export interface UseAsyncOptions<Cb> {
+	defaultData?: AsyncReturnType<Cb> | null,
+	debounceTime?: number,
+	throttleTime?: number,
+	throttleLimit?: number
+	staleTime?: number,
+	disableCache?: boolean,
+	caseSensitive?: boolean
+}
+
+const useAsync = <Cb extends AsyncFunctionWithCancel>(
 	callback: Cb,
-	options: {
-		defaultData?: AsyncReturnType<Cb> | null,
-		debounceTime?: number,
-		throttleTime?: number,
-		throttleLimit?: number
-		staleTime?: number,
-		disableCache?: boolean,
-		caseSensitive?: boolean
-	} = {}
-) => {
-	const {
+	{
 		defaultData = null,
 		debounceTime = 0,
 		throttleTime = 0,
 		throttleLimit = 1,
-		staleTime = 10000,
+		staleTime = Number.MAX_VALUE,
 		disableCache: disable = false,
 		caseSensitive = false
-	} = options
-
-	const cached = useCache(callback, { staleTime, disable, caseSensitive })
-	const debounced = useDebounce(cached, debounceTime)
+	}: UseAsyncOptions<Cb> = {}
+) => {
+	const [ debounced, cancelDebounce ] = useDebounce(callback, debounceTime)
 	const throttled = useThrottle(debounced, throttleTime, throttleLimit)
-	const [state, execute, cancelAsyncCall, setState] = useAsyncFn(throttled, defaultData)
+	const cached = useCache(throttled, { staleTime, disable, caseSensitive })
+	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, { defaultData })
 
-	const cancel = (reset: boolean = false) => {
-		debounced.cancel()
-		cancelAsyncCall(reset)
+	const cancel = (withDataReset: boolean = false) => {
+		cancelDebounce();
+		// cancelAsync(withDataReset)
+		callback.cancel?.()
 	}
 
-	return [state, execute, cancel, setState] as const
+	return [ state, execute, cancel, setState ] as const
 }
 
 export default useAsync;

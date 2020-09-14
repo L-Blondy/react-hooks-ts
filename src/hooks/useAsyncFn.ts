@@ -4,9 +4,15 @@ import { useSetState, useMountedState } from './';
 import { AsyncReturnType, AsyncFunction, PromiseWithCancel } from '../types';
 import { SetState } from './useSetState'
 
+export interface UseAsyncFnOptions<Cb> {
+	defaultData?: AsyncReturnType<Cb> | null,
+}
+
 const useAsyncFn = function <Cb extends AsyncFunction>(
 	callback: Cb,
-	defaultData: null | AsyncReturnType<Cb> = null
+	{
+		defaultData = null,
+	}: UseAsyncFnOptions<Cb> = {}
 ) {
 
 	type ReturnTuple = [
@@ -18,7 +24,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 			args: null | Parameters<Cb>
 		},
 		(...args: Parameters<Cb>) => void,
-		(resetState?: boolean) => void,
+		(withDataReset: boolean) => void,
 		SetState<{
 			isPending: boolean,
 			status: 'idle' | 'pending' | 'success' | 'error' | 'cancelled',
@@ -28,6 +34,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 		}>
 	]
 
+	const withDataResetRef = useRef(false)
 	const callbackRef = useRef(callback)
 	const lastCallID = useRef(0)
 	const isMounted = useMountedState()
@@ -37,7 +44,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 		callbackRef.current = callback
 	})
 
-	const [state, setState] = useSetState<ReturnTuple[0]>({
+	const [ state, setState ] = useSetState<ReturnTuple[ 0 ]>({
 		isPending: false,
 		status: 'idle',
 		error: null,
@@ -45,7 +52,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 		args: null
 	})
 
-	const execute: ReturnTuple[1] = useCallback((...args: Parameters<Cb>) => {
+	const execute: ReturnTuple[ 1 ] = useCallback((...args: Parameters<Cb>) => {
 		const callID = ++lastCallID.current
 
 		cancelRequest.current()
@@ -71,37 +78,26 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 				})
 			})
 			.catch(error => {
+
 				if (!isMounted() || callID !== lastCallID.current) return
-				setState({
-					error: { ...error, name: error.name, message: error.message },
-					args,
-					data: defaultData,
-					isPending: false,
-					status: 'error',
+				setState(state => {
+					return ({
+						error: { ...error, name: error.name, message: error.message },
+						args,
+						data: withDataResetRef.current ? defaultData : state.data,
+						isPending: false,
+						status: 'error',
+					})
 				})
 			})
-	}, [setState, isMounted])
+	}, [ setState, isMounted, defaultData ])
 
-	const cancel: ReturnTuple[2] = useCallback((resetState: boolean = false) => {
-		if (state.status !== 'pending') return
-		cancelRequest.current()
-		setState(() => {
-			return resetState
-				? ({
-					data: defaultData,
-					args: null,
-					error: null,
-					isPending: false,
-					status: 'cancelled',
-				}) : ({
-					isPending: false,
-					status: 'cancelled',
-				})
+	const cancel: ReturnTuple[ 2 ] = useCallback((withDataReset: boolean) => {
+		withDataResetRef.current = withDataReset
+		cancelRequest.current() //should create an error
+	}, [ setState, state ])
 
-		})
-	}, [setState, state])
-
-	return [state, execute, cancel, setState] as ReturnTuple
+	return [ state, execute, cancel, setState ] as ReturnTuple
 }
 
 export default useAsyncFn;
