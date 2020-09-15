@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react'
 import useAsync, { UseAsyncOptions } from '../hooks/useAsync'
 import fetchDummy, { DummyData } from '../API/fetchDummy'
 import fetchDummyAxios from '../API/fetchDummyAxios'
+import fetchDummyFast from '../API/fetchDummyFast'
 
 interface Args<Cb> {
 	withDataReset: boolean,
 	useAxios: boolean,
+	fastAPI: boolean,
 	options: UseAsyncOptions<Cb>,
 }
 
-export function UseAsync({ options, useAxios, withDataReset }: Args<typeof fetchDummy>) {
+export function UseAsync({ options, useAxios, withDataReset, fastAPI }: Args<typeof fetchDummy>) {
 	const [ id, setId ] = useState(1)
 	const [ state, asyncFetchDummy, cancel, setState ] = useAsync(
-		useAxios ? fetchDummyAxios : fetchDummy,
+		fastAPI ? fetchDummyFast : useAxios ? fetchDummyAxios : fetchDummy,
 		options
 	)
 

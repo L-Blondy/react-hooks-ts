@@ -32,11 +32,15 @@ export function DebounceNormalFunction() {
 export function CancelAsyncFunction() {
 	const [ data, setData ] = useState<DummyData>()
 	const [ count, setCount ] = useState(1)
+	const [ fetchDummyDebounced, cancelDebounce ] = useDebounce(fetchDummy, 0)
 
-	const [ fetchDummyDebounced, cancel ] = useDebounce(fetchDummy as AsyncFunction, 0)
+	const cancel = () => {
+		cancelDebounce()
+		fetchDummy.cancel?.()
+	}
 
 	const handleClick = () => {
-		fetchDummyDebounced.cancel?.()
+		cancel()
 		fetchDummyDebounced(count).then(data => {
 			setCount(count => count + 1)
 			setData(data)
@@ -46,7 +50,7 @@ export function CancelAsyncFunction() {
 	return (
 		<>
 			<button onClick={handleClick} >
-				Call Debouced Function
+				Call Debounced Function
 			</button>
 			<br />
 			<h4>{JSON.stringify(data) || 'undefined'}</h4>

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { PromiseWithCancel, AsyncFunctionWithCancel } from '../types'
+import { PromiseWithCancel, CancellableAsyncFn } from '../types'
 
 export interface DummyData {
 	userId: number,
@@ -10,7 +10,7 @@ export interface DummyData {
 
 let cancelToken: any;
 
-const fetchDummyAxios: AsyncFunctionWithCancel = (count: number): Promise<DummyData> => {
+const fetchDummyAxios: CancellableAsyncFn<(count: number) => Promise<DummyData>> = (count) => {
 
 	cancelToken = axios.CancelToken.source();
 

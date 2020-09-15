@@ -1,14 +1,13 @@
-
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useSetState, useMountedState } from './';
-import { AsyncReturnType, AsyncFunction, PromiseWithCancel, AsyncFunctionWithCancel } from '../types';
+import { AsyncReturnType, AsyncFunction, PromiseWithCancel, CancellableAsyncFn } from '../types';
 import { SetState } from './useSetState'
 
 export interface UseAsyncFnOptions<Cb> {
 	defaultData?: AsyncReturnType<Cb> | null,
 }
 
-const useAsyncFn = function <Cb extends AsyncFunctionWithCancel>(
+const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 	callback: Cb,
 	{
 		defaultData = null,
@@ -47,14 +46,17 @@ const useAsyncFn = function <Cb extends AsyncFunctionWithCancel>(
 		args: null
 	})
 
+	useEffect(() => {
+		callbackRef.current = callback
+	})
+
 	const cancel: ReturnTuple[ 2 ] = useCallback((withDataReset: boolean) => {
 		withDataResetRef.current = withDataReset
-		callback.cancel?.()
-		console.log('cancel')
-	}, [ callback ])
+		callbackRef.current.cancel?.()
+	}, [ callbackRef, callbackRef.current ])
 
 	const execute: ReturnTuple[ 1 ] = useCallback((...args: Parameters<Cb>) => {
-		callback.cancel?.()
+		callbackRef.current.cancel?.()
 		const callID = ++lastCallID.current
 
 		setState({
