@@ -1,5 +1,5 @@
 import React from 'react'
-import { DebounceNormalFunction, DebounceAsyncFunction } from '../../src/components/UseDebounce'
+import { DebounceNormalFunction, CancelAsyncFunction } from '../../src/components/UseDebounce'
 
 export default {
 	title: 'components/UseDebounce',
@@ -7,4 +7,4 @@ export default {
 }
 
 export const NormalFunction = (args) => <DebounceNormalFunction {...args} />
-export const AsyncFunction = (args) => <DebounceAsyncFunction {...args} />
+export const Cancel_Async_Function = (args) => <CancelAsyncFunction {...args} />

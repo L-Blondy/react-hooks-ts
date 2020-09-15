@@ -26,12 +26,12 @@ const useAsync = <Cb extends AsyncFunctionWithCancel>(
 	const [ debounced, cancelDebounce ] = useDebounce(callback, debounceTime)
 	const throttled = useThrottle(debounced, throttleTime, throttleLimit)
 	const cached = useCache(throttled, { staleTime, disable, caseSensitive })
-	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, { defaultData })
+	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, callback.cancel, { defaultData })
 
 	const cancel = (withDataReset: boolean = false) => {
-		cancelDebounce();
-		// cancelAsync(withDataReset)
-		callback.cancel?.()
+		// cancelDebounce();
+		cancelAsync(withDataReset)
+		// callback.cancel?.()
 	}
 
 	return [ state, execute, cancel, setState ] as const

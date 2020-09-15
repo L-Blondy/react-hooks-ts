@@ -1,14 +1,14 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import { useSetState, useMountedState } from './';
-import { AsyncReturnType, AsyncFunction, PromiseWithCancel } from '../types';
+import { AsyncReturnType, AsyncFunction, PromiseWithCancel, AsyncFunctionWithCancel } from '../types';
 import { SetState } from './useSetState'
 
 export interface UseAsyncFnOptions<Cb> {
 	defaultData?: AsyncReturnType<Cb> | null,
 }
 
-const useAsyncFn = function <Cb extends AsyncFunction>(
+const useAsyncFn = function <Cb extends AsyncFunctionWithCancel>(
 	callback: Cb,
 	{
 		defaultData = null,
@@ -38,11 +38,6 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 	const callbackRef = useRef(callback)
 	const lastCallID = useRef(0)
 	const isMounted = useMountedState()
-	const cancelRequest = useRef(() => { })
-
-	useEffect(() => {
-		callbackRef.current = callback
-	})
 
 	const [ state, setState ] = useSetState<ReturnTuple[ 0 ]>({
 		isPending: false,
@@ -52,10 +47,15 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 		args: null
 	})
 
-	const execute: ReturnTuple[ 1 ] = useCallback((...args: Parameters<Cb>) => {
-		const callID = ++lastCallID.current
+	const cancel: ReturnTuple[ 2 ] = useCallback((withDataReset: boolean) => {
+		withDataResetRef.current = withDataReset
+		callback.cancel?.()
+		console.log('cancel')
+	}, [ callback ])
 
-		cancelRequest.current()
+	const execute: ReturnTuple[ 1 ] = useCallback((...args: Parameters<Cb>) => {
+		callback.cancel?.()
+		const callID = ++lastCallID.current
 
 		setState({
 			args,
@@ -63,10 +63,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 			status: 'pending',
 		})
 
-		const promise: PromiseWithCancel<any> = callbackRef.current(...args)
-		cancelRequest.current = promise.cancel || (() => { })
-
-		promise
+		callbackRef.current(...args)
 			.then((data: AsyncReturnType<Cb>) => {
 				if (!isMounted() || callID !== lastCallID.current) return
 				setState({
@@ -92,10 +89,7 @@ const useAsyncFn = function <Cb extends AsyncFunction>(
 			})
 	}, [ setState, isMounted, defaultData ])
 
-	const cancel: ReturnTuple[ 2 ] = useCallback((withDataReset: boolean) => {
-		withDataResetRef.current = withDataReset
-		cancelRequest.current() //should create an error
-	}, [ setState, state ])
+
 
 	return [ state, execute, cancel, setState ] as ReturnTuple
 }

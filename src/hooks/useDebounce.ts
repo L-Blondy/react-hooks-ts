@@ -6,13 +6,13 @@ const noop = () => { }
 type SomeFunction = (...args: any) => any
 
 interface DebouncedFn<T extends SomeFunction> {
-	(...args: Parameters<T>): Promisify<PromiseWithCancel<ReturnType<T>>>
+	(...args: Parameters<T>): Promisify<ReturnType<T>>
 }
 
 const useDebounce = <T extends SomeFunction>(
 	callback: T,
 	delay: number = 0
-): [ DebouncedFn<T>, () => void ] => {
+): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void ] => {
 
 	const callbackRef = useRef(callback)
 	const delayRef = useRef(delay)
@@ -27,18 +27,20 @@ const useDebounce = <T extends SomeFunction>(
 		token.current && clearTimeout(token.current)
 	}
 
-	const debouncedCallback = useCallback((...args: Parameters<T>) => {
+	const debouncedCallback = useCallback((...args: Parameters<T>): Promisify<ReturnType<T>> => {
 		args.forEach((arg: any) => arg.target && arg.persist?.())
 
 		const promise = new Promise<ReturnType<T>>(resolve => {
 			cancel()
 			token.current = setTimeout(() => {
-				resolve(callbackRef.current(...args))
+				const result = callbackRef.current(...args)
+				console.log('resolve debounce promise:', result)
+				resolve(result)
 			}, delayRef.current)
 		})
 
 		return promise as Promisify<ReturnType<T>>
-	}, [])
+	}, [ callbackRef.current, callbackRef ])
 
 	useEffect(() => () => {
 		cancel()

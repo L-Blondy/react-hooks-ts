@@ -2,7 +2,12 @@ import { useRef, useCallback, useEffect } from 'react';
 import { isPromise } from '../utils'
 import { Promisify } from '../types'
 
-const pendingPromise = new Promise(() => { })
+let id: NodeJS.Timeout
+const garbageCollectedPromise = new Promise((resolve) => {
+	clearTimeout(id)
+	id = setTimeout(() => resolve(), 100)
+
+})
 
 const useThrottle = <T extends (...args: any) => any>(
 	callback: T,
@@ -30,11 +35,12 @@ const useThrottle = <T extends (...args: any) => any>(
 			callsWithinTime.current++
 			setTimeout(() => callsWithinTime.current--, throttleTimeRef.current);
 			let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
-			if (!isPromise(result))
+			if (!isPromise(result)) {
 				return Promise.resolve(result)
+			}
 			return result
 		}
-		return pendingPromise
+		return garbageCollectedPromise
 	}, [])
 
 	return execute as (...args: Parameters<T>) => Promisify<ReturnType<T>>

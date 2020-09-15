@@ -1,4 +1,4 @@
-import { AsyncFunctionWithCancel } from '../types'
+import { AsyncFunctionWithCancel, PromiseWithCancel } from '../types'
 
 export interface DummyData {
 	userId: number,
@@ -6,7 +6,6 @@ export interface DummyData {
 	title: string,
 	completed: boolean
 }
-
 
 const fetchDummy: AsyncFunctionWithCancel = (count: number): Promise<DummyData> => {
 
@@ -17,9 +16,9 @@ const fetchDummy: AsyncFunctionWithCancel = (count: number): Promise<DummyData> 
 		.then(res => res.json());
 
 	fetchDummy.cancel = () => {
+		console.log('cancelling request...')
 		controller.abort();
 	}
-
 	return promise
 }
 

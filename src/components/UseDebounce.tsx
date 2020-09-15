@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDebounce } from '../hooks'
 import fetchDummy, { DummyData } from '../API/fetchDummy'
+import { AsyncFunction } from '../types'
 
 export function DebounceNormalFunction() {
 	const [ count, setCount ] = useState(0)
@@ -28,13 +29,14 @@ export function DebounceNormalFunction() {
 	)
 }
 
-export function DebounceAsyncFunction() {
+export function CancelAsyncFunction() {
 	const [ data, setData ] = useState<DummyData>()
 	const [ count, setCount ] = useState(1)
 
-	const [ fetchDummyDebounced, cancel ] = useDebounce(fetchDummy, 1000)
+	const [ fetchDummyDebounced, cancel ] = useDebounce(fetchDummy as AsyncFunction, 0)
 
 	const handleClick = () => {
+		fetchDummyDebounced.cancel?.()
 		fetchDummyDebounced(count).then(data => {
 			setCount(count => count + 1)
 			setData(data)

@@ -11,7 +11,10 @@ interface Args<Cb> {
 
 export function UseAsync({ options, useAxios, withDataReset }: Args<typeof fetchDummy>) {
 	const [ id, setId ] = useState(1)
-	const [ state, asyncFetchDummy, cancel, setState ] = useAsync(useAxios ? fetchDummyAxios : fetchDummy, options)
+	const [ state, asyncFetchDummy, cancel, setState ] = useAsync(
+		useAxios ? fetchDummyAxios : fetchDummy,
+		options
+	)
 
 	useEffect(() => {
 		asyncFetchDummy(id)
