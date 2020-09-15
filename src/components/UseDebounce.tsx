@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDebounce } from '../hooks'
 import fetchDummy, { DummyData } from '../API/fetchDummy'
-import { AsyncFunction } from '../types'
 
 export function DebounceNormalFunction() {
 	const [ count, setCount ] = useState(0)
+	const title = useRef<HTMLInputElement>(null!)
 	const increment = (count: number) => {
 		setCount(count + 1)
-		return count
+		return count + 1
 	}
 	const [ incrementDebounced, cancel ] = useDebounce(increment, 1000)
 
 	const handleClick = () => {
-		incrementDebounced(count).then(() => console.log('resolve'))
+		incrementDebounced(count).then((newCount) => {
+			title.current.textContent = newCount.toString()
+		})
 	}
 
 	return (
@@ -21,6 +23,7 @@ export function DebounceNormalFunction() {
 				{count}
 			</button>
 			<br />
+			<h1 ref={title}>no title yet</h1>
 			<br />
 			<button onClick={cancel}>
 				Cancel

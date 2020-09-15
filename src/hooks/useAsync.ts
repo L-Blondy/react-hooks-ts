@@ -25,7 +25,7 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 ) => {
 
 	const [ debounced, cancelDebounce ] = useDebounce(callback, debounceTime);
-	const cached = useCache(debounced as CancellableAsyncFn, { staleTime, disable, caseSensitive });
+	const cached = useCache(debounced as CancellableAsyncFn<typeof debounced>, { staleTime, disable, caseSensitive });
 	cached.cancel = callback.cancel
 	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, { defaultData })
 	const throttled = useThrottle(execute, throttleTime, throttleLimit);
