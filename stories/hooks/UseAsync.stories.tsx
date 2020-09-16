@@ -11,7 +11,8 @@ export default {
 		throttleLimit: 1,
 		staleTime: 5000,
 		disableCache: false,
-		caseSensitiveCache: false
+		caseSensitiveCache: false,
+		withTrailing: false
 	}
 }
 
@@ -35,6 +36,7 @@ SlowWithFetch.args = {
 	useAxios: false,
 
 }
+
 export const SlowWithAxios = Template.bind({})
 SlowWithAxios.args = {
 	fastAPI: false,
@@ -45,4 +47,4 @@ export const FastAPI = Template.bind({})
 FastAPI.args = {
 	fastAPI: true,
 	useAxios: true,
-} 
+}

@@ -1,46 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useThrottle } from '../hooks'
-import fetchDummy, { DummyData } from '../API/fetchDummy'
+import fetchDummyFast from '../API/fetchDummyFast'
+import fetchDummy from '../API/fetchDummy'
 
 export interface Args {
-	limit: number
+	limit: number,
+	throttleTime: number,
+	withTrailing: boolean,
+	fast?: boolean
 }
 
-export function ThrottleNormalFunction({ limit }: Args) {
-	const [count, setCount] = useState(0)
-	const increment = (count: number) => {
-		setCount(count + 1)
-		return count + 1
-	}
-	const incrementThrottled = useThrottle(increment, 1000, limit)
+export function ThrottleNormalFunction({ limit, throttleTime, withTrailing }: Args) {
+	const [ count, setCount ] = useState(0)
+	const titleRef = useRef<HTMLHeadingElement>(null!)
 
-	const handleClick = () => {
-		incrementThrottled(count).then(count => console.log(count))
+	const incrementCount = () => {
+		setCount(count => count + 1)
 	}
+
+	const updateTitle = (count: number) => {
+		titleRef.current.textContent = count.toString()
+		return count
+	}
+
+	const [ updateTitleThrottled, cancel ] = useThrottle(updateTitle, throttleTime, { limit, withTrailing })
+
+	useEffect(() => {
+		updateTitleThrottled(count)
+			.then(() => console.log('returns a Promise'))
+	}, [ count, updateTitleThrottled ])
 
 	return (
-		<button onClick={ handleClick }>
-			{ count }
-		</button>
+		<>
+			<button onClick={incrementCount}>
+				{count}
+			</button>
+			<br />
+			<h4 ref={titleRef}>null</h4>
+			<br />
+			<button onClick={cancel}>
+				Cancel
+			</button>
+		</>
 	)
 }
 
-export function ThrottleAsyncFunction({ limit }: Args) {
-	const [data, setData] = useState<DummyData>()
-	const [count, setCount] = useState(1)
+export function ThrottleAsyncFunction({ limit, throttleTime, withTrailing, fast }: Args) {
 
-	const fetchDummyThrottled = useThrottle(fetchDummy, 1000, limit)
+	const [ count, setCount ] = useState(0)
+	const dataRef = useRef<HTMLHeadingElement>(null!)
 
-	const handleClick = () => {
-		fetchDummyThrottled(count).then(data => {
-			setCount(count => count + 1)
-			setData(data)
-		})
+	const incrementCount = () => {
+		setCount(count => count + 1)
 	}
 
+	const fetchData = useCallback((count) => {
+		return (fast ? fetchDummyFast(count) : fetchDummy(count))
+			.then(data => {
+				dataRef.current.textContent = JSON.stringify(data)
+				return data
+			})
+	}, [])
+
+	const [ fetchDataThrottled, cancelThrottle ] = useThrottle(fetchData, throttleTime, { limit, withTrailing })
+
+	const cancel = useCallback(() => {
+		cancelThrottle();
+		(fast ? fetchDummyFast : fetchDummy).cancel?.()
+	}, [ cancelThrottle, fast ])
+
+	useEffect(() => {
+		fetchDataThrottled(count)
+			.then(() => console.log('returns a Promise'))
+	}, [ count, fetchDataThrottled ])
+
 	return (
-		<button onClick={ handleClick } >
-			{ JSON.stringify(data) || 'undefined' }
-		</button>
+		<>
+			<button onClick={incrementCount}>
+				{count}
+			</button>
+			<br />
+			<h4 ref={dataRef}>null</h4>
+			<br />
+			<button onClick={cancel}>
+				Cancel
+			</button>
+		</>
 	)
 }

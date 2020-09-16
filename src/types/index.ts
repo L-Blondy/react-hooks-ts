@@ -17,10 +17,10 @@ export interface PromiseWithCancel<T> extends Promise<T> {
 	cancel?: () => void
 }
 
-interface AsyncFn<Cb extends AsyncFunction> {
-	(...args: Parameters<Cb>): ReturnType<Cb>
+interface AsyncFn {
+	<Cb extends AsyncFunction>(...args: Parameters<Cb>): ReturnType<Cb>
 }
 
-export interface CancellableAsyncFn<Cb extends AsyncFunction = AsyncFunction> extends AsyncFn<Cb> {
+export interface CancellableAsyncFn extends AsyncFn {
 	cancel?: () => void
 }

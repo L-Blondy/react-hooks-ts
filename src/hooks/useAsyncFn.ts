@@ -77,7 +77,6 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 				})
 			})
 			.catch(error => {
-
 				if (!isMounted() || callID !== lastCallID.current) return
 				setState(state => {
 					return ({

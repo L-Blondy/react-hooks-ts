@@ -17,7 +17,7 @@ export function UseAsync({ options, useAxios, withDataReset, fastAPI }: Args<typ
 		fastAPI ? fetchDummyFast : useAxios ? fetchDummyAxios : fetchDummy,
 		options
 	)
-
+	const test = useAsync(fetchDummyFast, {})
 	useEffect(() => {
 		asyncFetchDummy(id)
 	}, [ id, asyncFetchDummy ])

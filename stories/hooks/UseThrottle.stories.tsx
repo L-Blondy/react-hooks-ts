@@ -3,7 +3,12 @@ import { ThrottleNormalFunction, ThrottleAsyncFunction } from '../../src/compone
 
 export default {
 	title: 'components/UseThrottle',
-
+	args: {
+		limit: 1,
+		throttleTime: 1000,
+		withTrailing: true,
+		fast: false
+	}
 }
 
 export const NormalFunction = (args) => <ThrottleNormalFunction {...args} />
