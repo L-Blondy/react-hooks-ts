@@ -37,8 +37,8 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		defaultData
 	})
 	const [ throttled, cancelTrailingThrottle ] = useThrottle(execute, throttleTime, {
-		withTrailing 
-		 limit: throttleLimit,
+		withTrailing,
+		limit: throttleLimit,
 	});
 
 	const cancel = (withDataReset: boolean = false) => {
