@@ -24,3 +24,4 @@ interface AsyncFn<Cb extends AsyncFunction> {
 export interface CancellableAsyncFn<Cb extends AsyncFunction = AsyncFunction> extends AsyncFn<Cb> {
 	cancel?: () => void
 }
+

@@ -1,33 +1,53 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDebounce } from '../hooks'
 import fetchDummy, { DummyData } from '../API/fetchDummy'
 
-export function DebounceNormalFunction() {
+export function NormalFunction({ time = 1000 }: { time?: number }) {
 	const [ count, setCount ] = useState(0)
-	const title = useRef<HTMLInputElement>(null!)
-	const increment = (count: number) => {
-		setCount(count + 1)
-		return count + 1
-	}
-	const [ incrementDebounced, cancel ] = useDebounce(increment, 1000)
+	const countDisplay = useRef<HTMLHeadingElement>(null!)
+	const promiseDisplay = useRef<HTMLHeadingElement>(null!)
+	const timeoutDisplay = useRef<HTMLHeadingElement>(null!)
 
 	const handleClick = () => {
-		incrementDebounced(count).then((newCount) => {
-			title.current.textContent = newCount.toString()
-		})
+		setCount(count => count + 1)
 	}
+
+	const updateTitle = useCallback((newCount: number) => {
+		countDisplay.current.textContent = newCount.toString()
+		return newCount
+	}, [])
+
+	const [ updateTitleDebounced, cancel ] = useDebounce(updateTitle, time)
+
+	useEffect(() => {
+		updateTitleDebounced(count)
+			.then(newCount => {
+				promiseDisplay.current.textContent = newCount.toString()
+			})
+	}, [ count, updateTitleDebounced ])
+
+	useEffect(() => {
+		const id = setInterval(() => {
+			timeoutDisplay.current.textContent = (Number(timeoutDisplay.current.textContent) + 1) + ''
+		}, time)
+
+		return () => clearInterval(id)
+	}, [ time ])
 
 	return (
 		<>
-			<button onClick={handleClick}>
+			<button onClick={handleClick} data-testid='incrementBtn'>
 				{count}
 			</button>
 			<br />
-			<h1 ref={title}>no title yet</h1>
+			<h1 ref={countDisplay} data-testid='countDisplay'>0</h1>
+			<h1 ref={promiseDisplay} data-testid='promiseDisplay'>0</h1>
 			<br />
-			<button onClick={cancel}>
+			<button onClick={cancel} data-testid='cancelBtn'>
 				Cancel
 			</button>
+			<br />
+			<h1 ref={timeoutDisplay} data-testid='timeoutDisplay'>0</h1>
 		</>
 	)
 }
