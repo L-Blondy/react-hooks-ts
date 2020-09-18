@@ -1,126 +1,148 @@
-import React, { useState } from 'react';
 import '@testing-library/jest-dom/extend-expect';
-import { render, fireEvent, waitFor, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { NormalFunction } from '../src/components/UseDebounce';
-import { renderHook, act } from '@testing-library/react-hooks'
-import { useDebounce } from '../src/hooks'
-import { waitForMs } from '../src/utils'
+import { renderHook, act, RenderHookResult } from '@testing-library/react-hooks'
+import useDebounce, { UseDebounceReturn } from '../src/hooks/useDebounce'
 
-describe('COMPONENT/normal function', () => {
-
-	function getTestElements() {
-		return {
-			incrementBtn: screen.getByTestId('incrementBtn'),
-			countDisplay: screen.getByTestId('countDisplay'),
-			promiseDisplay: screen.getByTestId('promiseDisplay'),
-			cancelBtn: screen.getByTestId('cancelBtn'),
-			timeoutDisplay: screen.getByTestId('timeoutDisplay'),
-		}
-	}
-
-	test('initial data', async done => {
-		render(<NormalFunction time={100} />)
-		const { incrementBtn, countDisplay, promiseDisplay } = getTestElements()
-
-		expect(incrementBtn).toHaveTextContent('0')
-		expect(countDisplay).toHaveTextContent('0')
-		expect(promiseDisplay).toHaveTextContent('0')
-
-		done()
-	})
-
-	test('single click', async done => {
-		render(<NormalFunction time={100} />)
-		const { incrementBtn, countDisplay, promiseDisplay } = getTestElements()
-
-		fireEvent.click(incrementBtn)
-
-		expect(incrementBtn).toHaveTextContent('1')
-		expect(countDisplay).toHaveTextContent('0')
-		expect(promiseDisplay).toHaveTextContent('0')
-		await waitFor(() => expect(countDisplay).toHaveTextContent('1'), { timeout: 200 })
-		waitFor(() => expect(promiseDisplay).toHaveTextContent('1'))
-
-		done()
-	})
-
-	test('cancel after click', async done => {
-		render(<NormalFunction time={100} />)
-		const { incrementBtn, countDisplay, promiseDisplay, cancelBtn, timeoutDisplay } = getTestElements()
-
-		fireEvent.click(incrementBtn)
-
-		expect(incrementBtn).toHaveTextContent('1')
-		expect(countDisplay).toHaveTextContent('0')
-		expect(promiseDisplay).toHaveTextContent('0')
-
-		fireEvent.click(cancelBtn)
-
-		await waitFor(() => expect(timeoutDisplay).toHaveTextContent('3'))
-		expect(countDisplay).toHaveTextContent('0')
-		expect(promiseDisplay).toHaveTextContent('0')
-
-		done()
-	})
+beforeEach(() => {
+	jest.useFakeTimers()
+})
+afterEach(() => {
+	jest.clearAllTimers()
+})
+afterAll(() => {
+	jest.useRealTimers()
 })
 
-describe('HOOK/normal function', () => {
-	let count = 0
+function getHook(
+	delay: number
+): [ jest.Mock, RenderHookResult<{ delay: number }, any> ] {
+	const spy = jest.fn(x => x)
+	const hook = renderHook(({ delay }) => useDebounce(spy, delay), {
+		initialProps: {
+			delay
+		}
+	})
+	return [ spy, hook ]
+}
 
-	function increment() {
-		count++
-	}
+describe('useDebounce', () => {
 
-	beforeEach(() => {
-		count = 0
+	it('should be defined', () => {
+		expect(useDebounce).toBeDefined()
 	})
 
-	test('gets called asynchronously', async done => {
+	it('should return 2 functions', () => {
+		const spy = jest.fn()
+		const { result } = renderHook(() => useDebounce(spy))
+		const [ debouncedSpy, cancel ] = result.current
 
-		const { result } = renderHook(() => useDebounce(increment, 100))
-		act(() => {
-			result.current[ 0 ]()
-		})
-		expect(count).toBe(0)
-		await waitFor(() => expect(count).toBe(1))
-		expect(count).toBe(1)
-
-		await waitForMs(150)
-		expect(count).toBe(1)
-
-		done()
+		expect(typeof debouncedSpy).toBe('function')
+		expect(typeof cancel).toBe('function')
 	})
 
-	test('gets called once', async done => {
+	it('should return a promise', async done => {
+		const [ , { result } ] = getHook(100)
+		const [ debouncedSpy ] = result.current
 
-		const { result } = renderHook(() => useDebounce(increment, 100))
 		act(() => {
-			result.current[ 0 ]()
-			result.current[ 0 ]()
-			result.current[ 0 ]()
+			let promise = debouncedSpy(1)
+			jest.advanceTimersByTime(100)
+			promise.then(val => {
+				expect(val).toBe(1)
+				done()
+			})
 		})
-		expect(count).toBe(0)
-		await waitFor(() => expect(count).toBe(1))
-		expect(count).toBe(1)
 
-		expect(count).toBe(1)
-		await waitForMs(150)
 
-		done()
 	})
 
-	test('gets cancelled', async done => {
+	it('should not be called on render', () => {
+		const [ spy ] = getHook(100)
+		expect(spy).not.toHaveBeenCalled()
+	})
 
-		const { result } = renderHook(() => useDebounce(increment, 100))
+	it('should be called after X delay', () => {
+		const [ spy, { result } ] = getHook(100)
+		const [ debouncedSpy ] = result.current
+
 		act(() => {
-			result.current[ 0 ]()
-			result.current[ 1 ]()
+			debouncedSpy()
 		})
-		expect(count).toBe(0)
-		await waitForMs(150)
-		expect(count).toBe(0)
+		expect(spy).not.toHaveBeenCalled()
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(1)
+	})
 
-		done()
+	it('should call spy only once after X delay', () => {
+		const [ spy, { result } ] = getHook(100)
+		const [ debouncedSpy ] = result.current
+
+		act(() => {
+			debouncedSpy()
+			debouncedSpy()
+			debouncedSpy()
+		})
+		expect(spy).not.toHaveBeenCalled()
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(1)
+	})
+
+	it('should change timeout on delay change', () => {
+		const [ spy, { result, rerender } ] = getHook(100)
+		let [ debouncedSpy, cancel ] = result.current
+
+		act(() => {
+			debouncedSpy()
+		})
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(1)
+
+		rerender({ delay: 200 })
+
+		act(() => {
+			debouncedSpy()
+		})
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(1)
+		jest.advanceTimersByTime(200)
+		expect(spy).toHaveBeenCalledTimes(2)
+	})
+
+	it('should cancel when calling cancel()', () => {
+		const [ spy, { result } ] = getHook(100)
+		let [ debouncedSpy, cancel ] = result.current
+
+		act(() => {
+			debouncedSpy()
+			cancel()
+		})
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(0)
+	})
+
+	it('should cancel when unmounting component', () => {
+		const [ spy, { result, unmount } ] = getHook(100)
+		let [ debouncedSpy ] = result.current
+
+		act(() => {
+			debouncedSpy()
+			unmount()
+		})
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(0)
+	})
+
+	it('should cancel when calling the debounced function again before timeout', () => {
+		const [ spy, { result } ] = getHook(100)
+		let [ debouncedSpy ] = result.current
+
+		act(() => {
+			debouncedSpy()
+			jest.advanceTimersByTime(50)
+			debouncedSpy()
+			jest.advanceTimersByTime(50)
+		})
+		expect(spy).toHaveBeenCalledTimes(0)
+		jest.advanceTimersByTime(50)
+		expect(spy).toHaveBeenCalledTimes(1)
 	})
 })

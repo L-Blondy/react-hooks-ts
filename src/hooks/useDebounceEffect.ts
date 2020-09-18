@@ -7,10 +7,11 @@ function useDebounceEffect(
 	delay: number = 0,
 ) {
 
-	const [ debouncedCallback ] = useDebounce(callback, delay)
+	const [ debouncedCallback, cancel ] = useDebounce(callback, delay)
 
 	useEffect(() => {
 		debouncedCallback()
+		return cancel
 	}, deps) // eslint-disable-line
 }
 
