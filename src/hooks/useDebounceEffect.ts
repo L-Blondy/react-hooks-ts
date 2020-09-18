@@ -13,6 +13,8 @@ function useDebounceEffect(
 		debouncedCallback()
 		return cancel
 	}, deps) // eslint-disable-line
+
+	return cancel
 }
 
 export default useDebounceEffect;

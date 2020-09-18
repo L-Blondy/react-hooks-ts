@@ -51,8 +51,15 @@ describe('useDebounce', () => {
 				done()
 			})
 		})
+	})
 
-
+	it('should return 2 memoized functions', () => {
+		const [ , { result, rerender } ] = getHook(100)
+		const [ debounced1, cancel1 ] = result.current
+		rerender()
+		const [ debounced2, cancel2 ] = result.current
+		expect(debounced1).toBe(debounced2)
+		expect(cancel1).toBe(cancel2)
 	})
 
 	it('should not be called on render', () => {

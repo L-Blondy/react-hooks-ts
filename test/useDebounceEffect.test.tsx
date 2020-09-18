@@ -51,17 +51,27 @@ describe('useDebounceEffect', () => {
 		expect(spy).toHaveBeenCalledTimes(2)
 	})
 
-	it('should reset debounce after dep change', () => {
-		const [ spy, hook ] = getHook([ 1 ], 100)
+	it('should reset timeout on deps change', () => {
+		const [ spy, { rerender } ] = getHook([ 1 ], 100)
 
 		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(0);
 
-		hook.rerender({ deps: [ 2 ], delay: 100 })
+		rerender({ deps: [ 2 ], delay: 100 })
 		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(0)
 		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(1)
+	})
+
+	it('cancel() should cancel', () => {
+		const [ spy, { result, rerender, } ] = getHook([ 1 ], 100)
+		const cancel = result.current
+		act(() => {
+			cancel()
+		})
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(0);
 	})
 
 })
