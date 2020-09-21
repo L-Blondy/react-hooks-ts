@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/extend-expect';
-import { renderHook, act, RenderHookResult } from '@testing-library/react-hooks'
-import useSetState, { SetState } from '../src/hooks/useSetState'
+import { renderHook, act } from '@testing-library/react-hooks'
+import useSetState from '../src/hooks/useSetState'
 
 function getHook<State extends {}>(initialState?: State) {
 	return renderHook(() => useSetState(initialState))

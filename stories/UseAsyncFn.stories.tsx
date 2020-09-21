@@ -1,5 +1,5 @@
 import React from 'react'
-import { UseAsyncFn } from '../../src/components/UseAsyncFn'
+import { UseAsyncFn } from '../src/components/UseAsyncFn'
 
 export default {
 	title: 'components/UseAsyncFn',

@@ -14,13 +14,15 @@ afterAll(() => {
 
 function getHook(
 	deps: React.DependencyList,
-	delay: number
+	delay: number,
+	immediate: boolean = true
 ): [ jest.Mock, RenderHookResult<{ deps: React.DependencyList, delay: number }, any> ] {
 	const spy = jest.fn()
-	const hook = renderHook(({ deps, delay }) => useDebounceEffect(spy, deps, delay), {
+	const hook = renderHook(({ deps, delay, immediate }) => useDebounceEffect(spy, deps, delay, immediate), {
 		initialProps: {
 			deps,
-			delay
+			delay,
+			immediate
 		}
 	})
 
@@ -64,13 +66,43 @@ describe('useDebounceEffect', () => {
 		expect(spy).toHaveBeenCalledTimes(1)
 	})
 
-	it('cancel() should cancel', () => {
-		const [ spy, { result, rerender, } ] = getHook([ 1 ], 100)
-		const cancel = result.current
+	it('Should not run on mount if "immediate===false"', () => {
+		const [ spy, hook ] = getHook([ 1 ], 100, false)
+
+		jest.advanceTimersByTime(100)
+		expect(spy).toHaveBeenCalledTimes(0);
+	})
+
+	it('Should return a tuple of 2 functions', () => {
+		const [ , hook ] = getHook([ 1 ], 100, false)
+
+		expect(typeof hook.result.current[ 0 ]).toBe('function')
+		expect(typeof hook.result.current[ 1 ]).toBe('function')
+	})
+
+	it('Should reset timer with 1st function', () => {
+		const [ spy, { result, } ] = getHook([ 1 ], 100, true)
+		const [ reset ] = result.current
+		jest.advanceTimersByTime(50)
+		act(() => {
+			reset()
+		})
+		jest.advanceTimersByTime(50)
+		expect(spy).toHaveBeenCalledTimes(0);
+		jest.advanceTimersByTime(50)
+		expect(spy).toHaveBeenCalledTimes(1);
+	})
+
+	it('Should cancel execution with 2nd function', () => {
+		const [ spy, { result, } ] = getHook([ 1 ], 100, true)
+		const [ , cancel ] = result.current
+		jest.advanceTimersByTime(50)
 		act(() => {
 			cancel()
 		})
-		jest.advanceTimersByTime(100)
+		jest.advanceTimersByTime(50)
+		expect(spy).toHaveBeenCalledTimes(0);
+		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(0);
 	})
 

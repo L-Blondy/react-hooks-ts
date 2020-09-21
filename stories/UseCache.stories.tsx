@@ -1,5 +1,5 @@
 import React from 'react'
-import { CacheAsyncFunction, CacheNormalFunction, CaseSensitive } from '../../src/components/UseCache'
+import { CacheAsyncFunction, CacheNormalFunction, CaseSensitive } from '../src/components/UseCache'
 
 export default {
 	title: 'components/UseCache',

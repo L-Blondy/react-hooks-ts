@@ -5,7 +5,7 @@ function useReRender() {
 	const [ state, setState ] = useState({})
 
 	const reRender = () => setState({})
-	useEffect(() => console.log(state), [ state ])
+	useEffect(() => console.log('rerender'), [ state ])
 
 	return reRender
 }

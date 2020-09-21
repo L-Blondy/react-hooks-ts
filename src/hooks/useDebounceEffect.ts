@@ -1,20 +1,28 @@
 import { useEffect, DependencyList } from 'react';
+import { useRef } from 'react'
 import useDebounce from './useDebounce';
 
 function useDebounceEffect(
 	callback: (...args: any) => any,
 	deps: DependencyList,
-	delay: number = 0,
+	delay: number,
+	immediate: boolean = true
 ) {
 
 	const [ debouncedCallback, cancel ] = useDebounce(callback, delay)
+	const isMounted = useRef(false)
 
-	useEffect(() => {
+	function effect() {
+		if (!immediate && !isMounted.current) {
+			isMounted.current = true
+			return
+		}
 		debouncedCallback()
-		return cancel
-	}, deps) // eslint-disable-line
+	}
 
-	return cancel
+	useEffect(effect, deps)
+
+	return [ debouncedCallback, cancel ]
 }
 
 export default useDebounceEffect;

@@ -10,7 +10,7 @@ export type UseDebounceReturn<T extends SomeFunction> = [
 
 const useDebounce = <T extends SomeFunction>(
 	callback: T,
-	delay: number = 0
+	delay: number
 ): UseDebounceReturn<T> => {
 
 	const callbackRef = useRef(callback)

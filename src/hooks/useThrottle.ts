@@ -8,17 +8,19 @@ const garbageCollectedPromise = new Promise((resolve) => {
 	id = setTimeout(() => resolve(), 100)
 })
 
+interface UseThrottleOptions {
+	limit?: number,
+	withTrailing?: boolean
+}
+
 const useThrottle = <T extends (...args: any) => any>(
 	callback: T,
 	throttleTime: number,
 	{
 		limit = 1,
 		withTrailing = true
-	}: {
-		limit?: number,
-		withTrailing?: boolean
-	} = {}
-): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void ] => {
+	}: UseThrottleOptions = {}
+): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void, number ] => {
 
 	const callbackRef = useRef(callback)
 	const limitRef = useRef(limit)
@@ -35,6 +37,15 @@ const useThrottle = <T extends (...args: any) => any>(
 		withTrailingRef.current = withTrailing
 	})
 
+	function setupTimeout() {
+		dateMap.current.push(Date.now())
+		callsWithinTime.current++
+		setTimeout(() => {
+			dateMap.current.shift()
+			callsWithinTime.current--
+		}, throttleTimeRef.current);
+	}
+
 	const cancel = useCallback(() => {
 		trailingTimeoutId.current && clearTimeout(trailingTimeoutId.current)
 	}, [])
@@ -44,12 +55,7 @@ const useThrottle = <T extends (...args: any) => any>(
 			dateMap.current = []
 
 		if (callsWithinTime.current < limitRef.current) {
-			dateMap.current.push(Date.now())
-			callsWithinTime.current++
-			setTimeout(() => {
-				dateMap.current.shift()
-				callsWithinTime.current--
-			}, throttleTimeRef.current);
+			setupTimeout()
 			let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
 			if (!isPromise(result)) {
 				return Promise.resolve(result) as Promisify<ReturnType<T>>
@@ -59,9 +65,10 @@ const useThrottle = <T extends (...args: any) => any>(
 		if (withTrailingRef.current) {
 			const promise = new Promise<ReturnType<T>>(resolve => {
 				cancel()
-				const remainingTime = throttleTimeRef.current - (Date.now() - dateMap.current[ 0 ])
+				const remainingTime = throttleTimeRef.current - (Date.now() - (dateMap.current[ 0 ] || 0))
 				trailingTimeoutId.current = setTimeout(() => {
 					let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
+					setupTimeout()
 					resolve(result)
 				}, remainingTime)
 			})
@@ -70,7 +77,7 @@ const useThrottle = <T extends (...args: any) => any>(
 		return garbageCollectedPromise as Promisify<ReturnType<T>>
 	}, [])
 
-	return [ execute, cancel ]
+	return [ execute, cancel, callsWithinTime.current ]
 }
 
 export default useThrottle;

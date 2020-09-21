@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/extend-expect';
 import { renderHook, act, RenderHookResult } from '@testing-library/react-hooks'
-import useDebounce, { UseDebounceReturn } from '../src/hooks/useDebounce'
+import useDebounce from '../src/hooks/useDebounce'
 
 beforeEach(() => {
 	jest.useFakeTimers()
@@ -32,7 +32,7 @@ describe('useDebounce', () => {
 
 	it('should return 2 functions', () => {
 		const spy = jest.fn()
-		const { result } = renderHook(() => useDebounce(spy))
+		const { result } = renderHook(() => useDebounce(spy, 100))
 		const [ debouncedSpy, cancel ] = result.current
 
 		expect(typeof debouncedSpy).toBe('function')

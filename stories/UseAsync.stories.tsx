@@ -1,5 +1,5 @@
 import React from 'react'
-import { UseAsync } from '../../src/components/UseAsync'
+import { UseAsync } from '../src/components/UseAsync'
 
 export default {
 	title: 'components/UseAsync',
