@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDebounce } from '../src/hooks';
 
 interface Args {
@@ -16,17 +16,19 @@ export default {
 
 export const Demo = ({ time, isAsync }: Args) => {
 
-	const [ value, setValue ] = useState('')
+	const [ value, setValue ] = useState<string>('')
 	const [ calledWithValue, setCalledWithValue ] = useState()
-	const [ promiseReturn, setPromiseReturn ] = useState()
+	const [ promiseReturn, setPromiseReturn ] = useState<any>()
 
-	const [ debounced, cancel ] = useDebounce((value) => {
+	function callback(value): Promise<string> {
 		setCalledWithValue(value)
 		return isAsync ? Promise.resolve(value) : value
-	}, time)
+	}
+
+	const [ debounced, cancel ] = useDebounce(callback, time)
 
 	useEffect(() => {
-		debounced(value).then(value => setPromiseReturn(value))
+		debounced(value).then((value: string) => setPromiseReturn(value))
 	}, [ value, debounced ])
 
 	return (

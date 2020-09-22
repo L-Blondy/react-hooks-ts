@@ -1,3 +1,4 @@
+export { default as useThrottleEffect } from './useThrottleEffect';
 export { default as useDebounceEffect } from './useDebounceEffect';
 export { default as useMountedState } from './useMountedState';
 export { default as useFocusWithin } from './useFocusWithin';

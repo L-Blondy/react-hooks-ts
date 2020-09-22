@@ -1,15 +1,20 @@
 import { useEffect, DependencyList } from 'react';
 import { useRef } from 'react'
 import useDebounce from './useDebounce';
+import { FunctionWithNoParameter, Promisify } from '../types'
 
-function useDebounceEffect(
-	callback: (...args: any) => any,
+interface UseDebounceEffectOptions {
+	immediate?: boolean
+}
+
+function useDebounceEffect<Cb extends FunctionWithNoParameter>(
+	callback: Cb,
 	deps: DependencyList,
-	delay: number,
-	immediate: boolean = true
+	time: number,
+	{ immediate = true }: UseDebounceEffectOptions = {}
 ) {
 
-	const [ debouncedCallback, cancel ] = useDebounce(callback, delay)
+	const [ debouncedCallback, cancel ]: [ () => Promisify<ReturnType<Cb>>, () => void ] = useDebounce(callback, time)
 	const isMounted = useRef(false)
 
 	function effect() {
@@ -26,3 +31,5 @@ function useDebounceEffect(
 }
 
 export default useDebounceEffect;
+
+type e = Function

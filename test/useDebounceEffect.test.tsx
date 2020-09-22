@@ -14,14 +14,14 @@ afterAll(() => {
 
 function getHook(
 	deps: React.DependencyList,
-	delay: number,
+	time: number,
 	immediate: boolean = true
-): [ jest.Mock, RenderHookResult<{ deps: React.DependencyList, delay: number }, any> ] {
+): [ jest.Mock, RenderHookResult<{ deps: React.DependencyList, time: number }, any> ] {
 	const spy = jest.fn()
-	const hook = renderHook(({ deps, delay, immediate }) => useDebounceEffect(spy, deps, delay, immediate), {
+	const hook = renderHook(({ deps, time, immediate }) => useDebounceEffect(spy, deps, time, { immediate }), {
 		initialProps: {
 			deps,
-			delay,
+			time,
 			immediate
 		}
 	})
@@ -33,6 +33,10 @@ describe('useDebounceEffect', () => {
 
 	it('should be defined', () => {
 		expect(useDebounceEffect).toBeDefined()
+	})
+
+	it('Options should be optional', () => {
+		renderHook(() => useDebounceEffect(jest.fn(), [], 100))
 	})
 
 	it('should execute on mount', () => {
@@ -48,7 +52,7 @@ describe('useDebounceEffect', () => {
 		jest.advanceTimersByTime(100)
 		expect(spy).toHaveBeenCalledTimes(1);
 
-		hook.rerender({ deps: [ 2 ], delay: 100 })
+		hook.rerender({ deps: [ 2 ], time: 100 })
 		jest.advanceTimersByTime(100)
 		expect(spy).toHaveBeenCalledTimes(2)
 	})
@@ -59,7 +63,7 @@ describe('useDebounceEffect', () => {
 		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(0);
 
-		rerender({ deps: [ 2 ], delay: 100 })
+		rerender({ deps: [ 2 ], time: 100 })
 		jest.advanceTimersByTime(50)
 		expect(spy).toHaveBeenCalledTimes(0)
 		jest.advanceTimersByTime(50)

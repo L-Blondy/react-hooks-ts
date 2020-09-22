@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useDebounceEffect } from '../src/hooks'
 
 export default {
@@ -22,7 +22,7 @@ export const Demo = ({ time, immediate }: Args) => {
 
 	const [ , cancel ] = useDebounceEffect(() => {
 		setCalledWithValue(value)
-	}, [ value ], time, immediate)
+	}, [ value ], time, { immediate })
 
 	return (
 		<div>

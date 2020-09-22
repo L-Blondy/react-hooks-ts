@@ -1,7 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { Promisify } from '../types'
-
-type SomeFunction = (...args: any) => any
+import { Promisify, SomeFunction } from '../types'
 
 export type UseDebounceReturn<T extends SomeFunction> = [
 	(...args: Parameters<T>) => Promisify<ReturnType<T>>,
@@ -10,16 +8,16 @@ export type UseDebounceReturn<T extends SomeFunction> = [
 
 const useDebounce = <T extends SomeFunction>(
 	callback: T,
-	delay: number
+	time: number
 ): UseDebounceReturn<T> => {
 
 	const callbackRef = useRef(callback)
-	const delayRef = useRef(delay)
+	const timeRef = useRef(time)
 	const token = useRef<NodeJS.Timeout | null>(null)
 
 	useEffect(() => {
 		callbackRef.current = callback
-		delayRef.current = delay
+		timeRef.current = time
 	})
 
 	const debouncedCallback: UseDebounceReturn<T>[ 0 ] = useCallback((...args: Parameters<T>) => {
@@ -29,7 +27,7 @@ const useDebounce = <T extends SomeFunction>(
 			cancel()
 			token.current = setTimeout(() => {
 				resolve(callbackRef.current(...args))
-			}, delayRef.current)
+			}, timeRef.current)
 		})
 
 		return promise as Promisify<ReturnType<T>>

@@ -1,6 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { isPromise } from '../utils'
-import { Promisify } from '../types'
+import { Promisify, SomeFunction } from '../types'
 
 let id: NodeJS.Timeout
 const garbageCollectedPromise = new Promise((resolve) => {
@@ -9,32 +8,33 @@ const garbageCollectedPromise = new Promise((resolve) => {
 })
 
 interface UseThrottleOptions {
-	limit?: number,
-	withTrailing?: boolean
+	limit: number,
+	trailing: boolean
 }
 
-const useThrottle = <T extends (...args: any) => any>(
+const useThrottle = <T extends SomeFunction>(
 	callback: T,
-	throttleTime: number,
+	time: number,
 	{
 		limit = 1,
-		withTrailing = true
-	}: UseThrottleOptions = {}
+		trailing = true
+	}: UseThrottleOptions
 ): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void, number ] => {
 
 	const callbackRef = useRef(callback)
 	const limitRef = useRef(limit)
-	const throttleTimeRef = useRef(throttleTime)
+	const timeRef = useRef(time)
 	const callsWithinTime = useRef(0)
 	const trailingTimeoutId = useRef<NodeJS.Timeout>()
 	const dateMap = useRef<number[]>([])
-	const withTrailingRef = useRef(withTrailing)
+	const trailingRef = useRef(trailing)
 
 	useEffect(() => {
+		if (trailingRef.current !== trailing) cancel()
 		callbackRef.current = callback
 		limitRef.current = limit
-		throttleTimeRef.current = throttleTime
-		withTrailingRef.current = withTrailing
+		timeRef.current = time
+		trailingRef.current = trailing
 	})
 
 	function setupTimeout() {
@@ -43,7 +43,7 @@ const useThrottle = <T extends (...args: any) => any>(
 		setTimeout(() => {
 			dateMap.current.shift()
 			callsWithinTime.current--
-		}, throttleTimeRef.current);
+		}, timeRef.current);
 	}
 
 	const cancel = useCallback(() => {
@@ -51,29 +51,28 @@ const useThrottle = <T extends (...args: any) => any>(
 	}, [])
 
 	const execute = useCallback((...args: Parameters<T>) => {
+		cancel()
+
 		if (callsWithinTime.current === 0)
 			dateMap.current = []
 
+		//execute without timeout
 		if (callsWithinTime.current < limitRef.current) {
 			setupTimeout()
-			let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
-			if (!isPromise(result)) {
-				return Promise.resolve(result) as Promisify<ReturnType<T>>
-			}
-			return result
+			return Promise.resolve(callbackRef.current(...args)) as Promisify<ReturnType<T>>
 		}
-		if (withTrailingRef.current) {
+		//execute with timeout
+		if (trailingRef.current) {
+			const remainingTime = timeRef.current - (Date.now() - (dateMap.current[ 0 ] || 0))
 			const promise = new Promise<ReturnType<T>>(resolve => {
-				cancel()
-				const remainingTime = throttleTimeRef.current - (Date.now() - (dateMap.current[ 0 ] || 0))
 				trailingTimeoutId.current = setTimeout(() => {
-					let result: Promisify<ReturnType<T>> = callbackRef.current(...args)
 					setupTimeout()
-					resolve(result)
+					resolve(callbackRef.current(...args))
 				}, remainingTime)
 			})
 			return promise as Promisify<ReturnType<T>>
 		}
+		//do not execute
 		return garbageCollectedPromise as Promisify<ReturnType<T>>
 	}, [])
 

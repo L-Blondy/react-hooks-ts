@@ -1,10 +1,10 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { isPromise } from '../utils'
-import { AsyncFunction, NormalFunction, AsyncReturnType } from './../types';
+import { SomeFunction, AsyncReturnType } from './../types';
 
-type AnyFunction = AsyncFunction | NormalFunction
 
-const useCache = <T extends AnyFunction>(
+
+const useCache = <T extends SomeFunction>(
 	callback: T,
 	{
 		staleTime = Number.MAX_VALUE,

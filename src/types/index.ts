@@ -1,5 +1,6 @@
-export type NormalFunction = (...args: any) => any
+export type SomeFunction = (...args: any) => any
 export type AsyncFunction = (...args: any) => Promise<any>
+export type FunctionWithNoParameter = () => any
 
 export type PromiseReturnType<T> = T extends Promise<infer R>
 	? R

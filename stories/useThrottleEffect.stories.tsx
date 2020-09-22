@@ -1,24 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { useThrottle } from '../src/hooks'
+import { useThrottleEffect } from '../src/hooks'
 
 export default {
-	title: 'components/UseThrottle',
+	title: 'components/UseThrottleEffect',
+	decorators: [ (Story) => <Story /> ],
 	args: {
 		limit: 1,
-		throttleTime: 1000,
+		time: 1000,
 		trailing: true,
-		isAsync: true
+		isAsync: true,
+		immediate: true
 	}
 }
 
 interface Args {
 	limit: number,
-	throttleTime: number,
+	time: number,
 	trailing: boolean,
-	isAsync: boolean
+	isAsync: boolean,
+	immediate: boolean
 }
 
-export function Demo({ limit, throttleTime, trailing, isAsync }: Args) {
+export function Demo({ limit, time, trailing, immediate, isAsync }: Args) {
 	const [ count, setCount ] = useState(0)
 	const titleRef = useRef<HTMLHeadingElement>(null!)
 	const [ runningTimeouts, setRunningTimeouts ] = useState(0)
@@ -27,19 +30,16 @@ export function Demo({ limit, throttleTime, trailing, isAsync }: Args) {
 		setCount(count => count + 1)
 	}
 
-	const updateTitle = (count: number) => {
-		titleRef.current.textContent = count.toString()
+	const setupTimeout = () => {
 		setRunningTimeouts(runningTimeouts => runningTimeouts + 1)
-		setTimeout(() => setRunningTimeouts(runningTimeouts => runningTimeouts - 1), throttleTime)
-		return isAsync ? Promise.resolve(count) : count
+		setTimeout(() => setRunningTimeouts(runningTimeouts => runningTimeouts - 1), time)
 	}
 
-	const [ updateTitleThrottled, cancel ] = useThrottle(updateTitle, throttleTime, { limit, trailing })
-
-	useEffect(() => {
-		updateTitleThrottled(count)
-			.then(() => console.log('returns a Promise'))
-	}, [ count, updateTitleThrottled ])
+	const [ throttled, cancel ] = useThrottleEffect(() => {
+		titleRef.current.textContent = count.toString()
+		setupTimeout()
+		return isAsync ? Promise.resolve(count) : count
+	}, [ count ], time, { limit, trailing, immediate })
 
 	return (
 		<>
