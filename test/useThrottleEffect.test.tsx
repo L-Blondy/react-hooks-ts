@@ -65,4 +65,22 @@ describe('useThrottleEffect', () => {
 		jest.advanceTimersByTime(100)
 		expect(spy).toBeCalledTimes(1)
 	})
+
+	it('(trailing===true) Should cancel trailing if unmounted', () => {
+		const [ spy, hook ] = getHook([ 0 ], { trailing: true })
+		hook.rerender({ deps: [ 1 ], trailing: true })
+		hook.unmount()
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(1)
+	})
+
+	it('(trailing===true => false) Should cancel trailing', () => {
+		const [ spy, hook ] = getHook([ 0 ], { trailing: true })
+		hook.rerender({ deps: [ 1 ], trailing: true })
+		hook.rerender({ deps: [ 2 ], trailing: false })
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(1)
+	})
+
+
 })

@@ -76,6 +76,8 @@ const useThrottle = <T extends SomeFunction>(
 		return garbageCollectedPromise as Promisify<ReturnType<T>>
 	}, [])
 
+	useEffect(() => () => cancel())
+
 	return [ execute, cancel, callsWithinTime.current ]
 }
 

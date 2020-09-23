@@ -221,4 +221,17 @@ describe('useThrottle', () => {
 		act(() => { execute(4).then(res => expect(res).toBe(4)) })
 		jest.advanceTimersByTime(50)
 	})
+
+	it('Should cancel trailing if unmounted', () => {
+		const [ spy, hook ] = getHook(100, 1, true)
+		const execute = hook.result.current[ 0 ]
+		act(() => {
+			execute()
+			execute()
+		})
+		hook.unmount()
+		// expect(spy).toBeCalledTimes(1)
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(1)
+	})
 })
