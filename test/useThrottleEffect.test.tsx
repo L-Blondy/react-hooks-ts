@@ -21,7 +21,7 @@ const getHook = (
 	} = {}
 ): [ jest.Mock, RenderHookResult<{ deps?: React.DependencyList, time?: number, limit?: number, trailing?: boolean, immediate?: boolean }, any> ] => {
 	const spy = jest.fn(x => x)
-	const hook = renderHook(({ deps, time, limit, trailing, immediate }) => useThrottleEffect(spy, deps, time, { limit, trailing, immediate }), {
+	const hook = renderHook(({ deps, time = 100, limit = 1, trailing = true, immediate = true }) => useThrottleEffect(spy, deps, time, { limit, trailing, immediate }), {
 		initialProps: { deps, time, limit, trailing, immediate }
 	})
 
@@ -30,12 +30,12 @@ const getHook = (
 
 describe('useThrottleEffect', () => {
 
-	it('Should return 2 functions', () => {
+	it('Should return 3 functions', () => {
 		const [ , hook ] = getHook([])
-		const [ reset, cancel ] = hook.result.current
-
+		const [ reset, cancel, hasPendingTrailing ] = hook.result.current
 		expect(typeof reset).toBe('function')
 		expect(typeof cancel).toBe('function')
+		expect(typeof hasPendingTrailing).toBe('function')
 	})
 
 	it('Options should be optional', () => {
@@ -82,5 +82,27 @@ describe('useThrottleEffect', () => {
 		expect(spy).toBeCalledTimes(1)
 	})
 
+	it('(limit===1 => 2) Limit change should be applied', () => {
+		const [ spy, hook ] = getHook([ 0 ], { limit: 1 })
+		hook.rerender({ deps: [ 1 ], limit: 2 })
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(2)
+	})
 
+	it('(time===100 => 200) Time change should not trigger execution if there is no trailing execution pending', () => {
+		const [ spy, hook ] = getHook([ 0 ], { time: 100 })
+		hook.rerender({ deps: [ 0 ], time: 200 })
+		jest.advanceTimersByTime(200)
+		expect(spy).toBeCalledTimes(1)
+	})
+
+	it('(time===100 => 200) Time change should trigger execution if there is a trailing execution pending', () => {
+		const [ spy, hook ] = getHook([ 0 ], { time: 100 })
+		hook.rerender({ deps: [ 1 ], time: 100 })
+		hook.rerender({ deps: [ 1 ], time: 200 })
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(1)
+		jest.advanceTimersByTime(100)
+		expect(spy).toBeCalledTimes(2)
+	})
 })

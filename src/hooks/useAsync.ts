@@ -1,4 +1,4 @@
-import { useAsyncFn, useDebounce, useCache, useThrottle } from './';
+import { useAsyncFn, useDebounce, useCacheFn, useThrottle } from './';
 import { CancellableAsyncFn, AsyncReturnType } from '../types';
 
 export interface UseAsyncOptions<Cb> {
@@ -19,7 +19,7 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		debounceTime = 0,
 		throttleTime = 0,
 		throttleLimit = 1,
-		withTrailing = false,
+		withTrailing: trailing = false,
 		staleTime = Number.MAX_VALUE,
 		disableCache = false,
 		caseSensitiveCache = false
@@ -27,17 +27,18 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 ) => {
 
 	const [ debounced, cancelDebounce ] = useDebounce(callback, debounceTime);
-	const cached = useCache(debounced as CancellableAsyncFn<typeof debounced>, {
+	const [ cached ] = useCacheFn(debounced as CancellableAsyncFn<typeof debounced>, {
 		staleTime,
 		caseSensitive: caseSensitiveCache,
 		disable: disableCache,
+		isAsync: true
 	});
 	cached.cancel = callback.cancel
 	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, {
 		defaultData
 	})
 	const [ throttled, cancelTrailingThrottle ] = useThrottle(execute, throttleTime, {
-		withTrailing,
+		trailing,
 		limit: throttleLimit,
 	});
 

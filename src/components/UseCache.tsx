@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCache } from '../hooks'
+import { useCacheFn } from '../hooks'
 
 interface Options {
 	staleTime?: number,
@@ -14,7 +14,7 @@ export function CacheNormalFunction(args: Options) {
 		return n
 	}
 
-	const cachedAPI = useCache(API, args)
+	const cachedAPI = useCacheFn(API, args)
 
 	return (
 		<button onClick={() => cachedAPI(2)}>
@@ -30,7 +30,7 @@ export function CacheAsyncFunction(args: Options) {
 		return Promise.resolve(n)
 	}
 
-	const cachedAPI = useCache(API, args)
+	const cachedAPI = useCacheFn(API, args)
 
 	return (
 		<button onClick={() => cachedAPI(2)}>
@@ -48,7 +48,7 @@ export function CaseSensitive(args: Options) {
 		return s
 	}
 
-	const cachedAPI = useCache(API, args)
+	const cachedAPI = useCacheFn(API, args)
 
 	const handleClick = () => {
 		setKeyword(keyword => keyword === 'a' ? 'A' : 'a')

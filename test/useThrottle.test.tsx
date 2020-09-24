@@ -22,11 +22,21 @@ const getHook = (
 
 describe('useThrottle', () => {
 
-	it('Should return 2 functions', () => {
+	it('Should return 3 functions', () => {
 		const [ , hook ] = getHook()
 
 		expect(typeof hook.result.current[ 0 ]).toBe('function')
 		expect(typeof hook.result.current[ 1 ]).toBe('function')
+		expect(typeof hook.result.current[ 2 ]).toBe('function')
+	})
+
+	it('Should return the same function instances on rerender', () => {
+		const [ , hook ] = getHook()
+		const [ execute, cancel, getHasPendingTrailing ] = hook.result.current
+		hook.rerender()
+		expect(hook.result.current[ 0 ]).toBe(execute)
+		expect(hook.result.current[ 1 ]).toBe(cancel)
+		expect(hook.result.current[ 2 ]).toBe(getHasPendingTrailing)
 	})
 
 	it('Should not execute onmount', () => {
@@ -233,5 +243,21 @@ describe('useThrottle', () => {
 		// expect(spy).toBeCalledTimes(1)
 		jest.advanceTimersByTime(100)
 		expect(spy).toBeCalledTimes(1)
+	})
+
+	it('3rd function should return whether there is a pending trailing execution or not', () => {
+		const [ spy, hook ] = getHook(100, 1, true)
+		const hasPendingTrailing = hook.result.current[ 2 ]
+		const execute = hook.result.current[ 0 ]
+		act(() => {
+			execute()
+		})
+		expect(hasPendingTrailing()).toBeFalsy()
+		act(() => {
+			execute()
+		})
+		expect(hasPendingTrailing()).toBeTruthy()
+		jest.advanceTimersByTime(100)
+		expect(hasPendingTrailing()).toBeFalsy()
 	})
 })

@@ -1,68 +1,71 @@
-import { useRef, useCallback, useEffect } from 'react';
-import { isPromise } from '../utils'
-import { SomeFunction, AsyncReturnType } from './../types';
+import { useEffect, useRef, useMemo } from 'react'
 
+export type CacheResult = {
+	value: any,
+	updatedOn: number,
+	expireDate: number,
+	isStale: boolean,
+	age: number,
+	isAsync: boolean
+}
 
+export interface CacheStructure {
+	[ args: string ]: CacheResult
+}
 
-const useCache = <T extends SomeFunction>(
-	callback: T,
-	{
-		staleTime = Number.MAX_VALUE,
-		caseSensitive = false,
-		disable = false,
-	} = {}
-): T => {
+export interface UseCacheOptions {
+	staleTime?: number,
+	caseSensitive?: boolean,
+	isAsync?: boolean
+}
 
-	const callbackRef = useRef(callback)
+function useCache({
+	staleTime = Number.MAX_VALUE,
+	caseSensitive = false,
+	isAsync = false
+}: UseCacheOptions = {}) {
+
+	const memoryRef = useRef<CacheStructure>({})
 	const staleTimeRef = useRef(staleTime)
 	const caseSensitiveRef = useRef(caseSensitive)
-	const cache = useRef<{ [ args: string ]: { result: any, updatedOn: number, isAsync: boolean } }>({})
+	const isAsyncRef = useRef(isAsync)
 
 	useEffect(() => {
-		callbackRef.current = callback
 		staleTimeRef.current = staleTime
 		caseSensitiveRef.current = caseSensitive
+		isAsyncRef.current = isAsync
 	})
 
-	const execute = useCallback((...args: Parameters<T>) => {
-		let key = args.toString()
+	const cache = useMemo(() => ({
+		get(...keys: any[]): CacheResult | undefined {
+			const key = [ ...keys, isAsyncRef.current ].toString()
+			return memoryRef.current[ caseSensitiveRef.current ? key : key.toLowerCase() ] || undefined
+		},
+		set(...keys: any[]) {
+			let key = [ ...keys, isAsyncRef.current ].toString()
+			key = caseSensitiveRef.current ? key : key.toLowerCase()
 
-		if (!caseSensitiveRef.current) key = key.toLowerCase()
-		const cacheContent = cache.current[ key ]
-		const now = Date.now()
-
-		if (cacheContent && now - cacheContent.updatedOn < staleTimeRef.current) {
-			console.log('using cache')
-			if (cacheContent.isAsync)
-				return Promise.resolve(cacheContent.result)
-			return cacheContent.result
-		}
-
-		const returnValue = callbackRef.current(...args)
-
-		if (isPromise(returnValue)) {
-			return returnValue
-				.then((result: AsyncReturnType<T>) => {
-					cache.current[ key ] = {
-						result,
-						updatedOn: now,
-						isAsync: true
+			return {
+				to(value: any) {
+					const newCacheResult: CacheResult = {
+						value,
+						updatedOn: Date.now(),
+						expireDate: Date.now() + staleTimeRef.current,
+						isAsync: isAsyncRef.current,
+						get isStale() {
+							return Date.now() - (this as any).expireDate > 0
+						},
+						get age() {
+							return Date.now() - (this as any).updatedOn
+						}
 					}
-					return result
-				})
+					memoryRef.current[ key ] = newCacheResult
+				}
+			}
 		}
+	}), [])
 
-		cache.current[ key ] = {
-			result: returnValue,
-			updatedOn: now,
-			isAsync: false
-		}
-		return returnValue
-	}, [])
-
-	return disable
-		? callback
-		: execute as T
+	return cache
 }
 
 export default useCache;

@@ -18,23 +18,27 @@ function useThrottleEffect(
 		immediate = true
 	}: UseThrottleEffectOptions = {}
 ) {
-	const [ throttled, cancel ] = useThrottle(callback, time, {
+	const [ throttled, cancel, hasPendingTailing ] = useThrottle(callback, time, {
 		limit,
 		trailing
 	})
-	const isMounted = useRef(false)
+	const isFirstRender = useRef(true)
 
 	function effect() {
-		if (!immediate && !isMounted.current) {
-			isMounted.current = true
-			return
-		}
-		throttled()
+		if (immediate || !isFirstRender.current)
+			throttled()
+		isFirstRender.current = false
 	}
+
+	function updatePendingTrailing() {
+		hasPendingTailing() && throttled()
+	}
+
+	useEffect(updatePendingTrailing, [ time ])
 
 	useEffect(effect, deps)
 
-	return [ throttled, cancel ]
+	return [ throttled, cancel, hasPendingTailing ]
 }
 
 export default useThrottleEffect;

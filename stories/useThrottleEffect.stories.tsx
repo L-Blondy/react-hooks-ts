@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useThrottleEffect } from '../src/hooks'
 
 export default {
-	title: 'components/UseThrottleEffect',
+	title: 'components/useThrottleEffect',
 	decorators: [ (Story) => <Story /> ],
 	args: {
 		limit: 1,

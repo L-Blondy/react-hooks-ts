@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-function useReRender() {
+function useRerender() {
 
-	const [ state, setState ] = useState({})
+	const [ , setState ] = useState({})
 
-	const reRender = () => setState({})
-	useEffect(() => console.log('rerender'), [ state ])
+	const reRender = useCallback(() => setState({}), [])
 
 	return reRender
 }
 
-export default useReRender;
+export default useRerender;

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { useMountedState, useReRender } from '../src/hooks'
+import { useMountedState, useRerender } from '../src/hooks'
 
 export default {
 	title: 'components/UseMountedState',
@@ -8,7 +8,7 @@ export default {
 export function Demo(Story) {
 	const [ count, setCount ] = useState(0)
 	const [ isChildMounted, setIsChildMounted ] = useState(count % 2 === 0)
-	const reRender = useReRender()
+	const reRender = useRerender()
 
 	return (
 		<div>

@@ -19,7 +19,7 @@ const useThrottle = <T extends SomeFunction>(
 		limit = 1,
 		trailing = true
 	}: UseThrottleOptions
-): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void, number ] => {
+): [ (...args: Parameters<T>) => Promisify<ReturnType<T>>, () => void, () => boolean ] => {
 
 	const callbackRef = useRef(callback)
 	const limitRef = useRef(limit)
@@ -28,6 +28,7 @@ const useThrottle = <T extends SomeFunction>(
 	const trailingTimeoutId = useRef<NodeJS.Timeout>()
 	const dateMap = useRef<number[]>([])
 	const trailingRef = useRef(trailing)
+	const hasPendingTrailing = useRef(false)
 
 	useEffect(() => {
 		if (trailingRef.current !== trailing) cancel()
@@ -36,6 +37,8 @@ const useThrottle = <T extends SomeFunction>(
 		timeRef.current = time
 		trailingRef.current = trailing
 	})
+
+	useEffect(() => () => cancel(), [])
 
 	function setupTimeout() {
 		dateMap.current.push(Date.now())
@@ -63,10 +66,12 @@ const useThrottle = <T extends SomeFunction>(
 		}
 		//execute with timeout
 		if (trailingRef.current) {
+			hasPendingTrailing.current = true
 			const remainingTime = timeRef.current - (Date.now() - (dateMap.current[ 0 ] || 0))
 			const promise = new Promise<ReturnType<T>>(resolve => {
 				trailingTimeoutId.current = setTimeout(() => {
 					setupTimeout()
+					hasPendingTrailing.current = false
 					resolve(callbackRef.current(...args))
 				}, remainingTime)
 			})
@@ -76,9 +81,9 @@ const useThrottle = <T extends SomeFunction>(
 		return garbageCollectedPromise as Promisify<ReturnType<T>>
 	}, [])
 
-	useEffect(() => () => cancel())
+	const getHasPendingTrailing = useCallback(() => hasPendingTrailing.current, [])
 
-	return [ execute, cancel, callsWithinTime.current ]
+	return [ execute, cancel, getHasPendingTrailing ]
 }
 
 export default useThrottle;
