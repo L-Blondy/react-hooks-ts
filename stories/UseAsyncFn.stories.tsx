@@ -12,7 +12,7 @@ export default {
 export const Demo = ({ withDataReset }) => {
 
 	const [ inputVal, setinputVal ] = useState('')
-	const [ state, execute, cancel ] = useAsyncFn(fakeAPI(1000))
+	const [ state, execute, cancel ] = useAsyncFn(fakeAPI)
 
 	const handleSubmit = (e) => {
 		e.preventDefault()
@@ -31,6 +31,7 @@ export const Demo = ({ withDataReset }) => {
 				<h1>Error: {JSON.stringify(state.error)}</h1>
 				<h1>Status: {state.status}</h1>
 				<h1>isPending: {String(state.isPending)}</h1>
+				<h1>Args: {String(state.args)}</h1>
 			</div>
 		</div>
 	)

@@ -24,7 +24,7 @@ function syncFn(str1: string, str2: string): string {
 }
 
 export const Demo = (options: Options) => {
-	const [ fakeAPIwithCache, cache ] = useCacheFn(options.isAsync ? fakeAPI(1000) : syncFn, options)
+	const [ fakeAPIwithCache, cache ] = useCacheFn(options.isAsync ? fakeAPI : syncFn, options)
 	const [ value, setValue ] = useState<string>()
 	const [ age, setAge ] = useState<number>()
 	const [ arg1, setArg1 ] = useState('')

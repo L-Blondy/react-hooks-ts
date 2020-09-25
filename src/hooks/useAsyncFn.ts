@@ -10,7 +10,7 @@ export interface UseAsyncFnOptions<Cb> {
 const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 	callback: Cb,
 	{
-		defaultData = null,
+		defaultData = null
 	}: UseAsyncFnOptions<Cb> = {}
 ) {
 
@@ -22,7 +22,7 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 			data: null | AsyncReturnType<Cb>,
 			args: null | Parameters<Cb>
 		},
-		(...args: Parameters<Cb>) => void,
+		(...args: Parameters<Cb>) => Promise<void>,
 		(withDataReset: boolean) => void,
 		SetState<{
 			isPending: boolean,
@@ -65,36 +65,37 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 			status: 'pending',
 		})
 
-		callbackRef.current(...args)
-			.then((data: AsyncReturnType<Cb>) => {
-				if (!isMounted() || callID !== lastCallID.current) return
-				setState({
-					data,
-					args,
-					isPending: false,
-					error: null,
-					status: 'success',
-				})
-			})
-			.catch(error => {
-				if (!isMounted() || callID !== lastCallID.current) return
-				error = typeof error === 'string'
-					? { name: 'Error', message: error }
-					: { ...error, name: error.name, message: error.message }
-
-				setState(state => {
-					return ({
-						error,
+		return new Promise(resolve => {
+			callbackRef.current(...args)
+				.then((data: AsyncReturnType<Cb>) => {
+					if (!isMounted() || callID !== lastCallID.current) return
+					setState({
+						data,
 						args,
-						data: withDataResetRef.current ? defaultData : state.data,
 						isPending: false,
-						status: 'error',
+						error: null,
+						status: 'success',
 					})
 				})
-			})
+				.catch(error => {
+					if (!isMounted() || callID !== lastCallID.current) return
+					error = typeof error === 'string'
+						? { name: 'Error', message: error }
+						: { ...error, name: error.name, message: error.message }
+
+					setState(state => {
+						return ({
+							error,
+							args,
+							data: withDataResetRef.current ? defaultData : state.data,
+							isPending: false,
+							status: 'error',
+						})
+					})
+				})
+				.finally(resolve)
+		})
 	}, [ setState, isMounted, defaultData ])
-
-
 
 	return [ state, execute, cancel, setState ] as ReturnTuple
 }
