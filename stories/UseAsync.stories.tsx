@@ -1,5 +1,5 @@
 import React from 'react'
-import { UseAsync } from '../src/components/UseAsync'
+// import { UseAsync } from '../src/components/UseAsync'
 
 export default {
 	title: 'components/UseAsync',
@@ -16,35 +16,37 @@ export default {
 	}
 }
 
-const Template = ({
-	useAxios,
-	withDataReset,
-	fastAPI,
-	...props
-}) => (
-		<UseAsync
-			useAxios={useAxios}
-			fastAPI={fastAPI}
-			withDataReset={withDataReset}
-			options={{ ...props }}
-		/>
-	)
+export const Demo = () => null
 
-export const SlowWithFetch = Template.bind({})
-SlowWithFetch.args = {
-	fastAPI: false,
-	useAxios: false,
+// const Template = ({
+// 	useAxios,
+// 	withDataReset,
+// 	fastAPI,
+// 	...props
+// }) => (
+// 		<UseAsync
+// 			useAxios={useAxios}
+// 			fastAPI={fastAPI}
+// 			withDataReset={withDataReset}
+// 			options={{ ...props }}
+// 		/>
+// 	)
 
-}
+// export const SlowWithFetch = Template.bind({})
+// SlowWithFetch.args = {
+// 	fastAPI: false,
+// 	useAxios: false,
 
-export const SlowWithAxios = Template.bind({})
-SlowWithAxios.args = {
-	fastAPI: false,
-	useAxios: true,
-}
+// }
 
-export const FastAPI = Template.bind({})
-FastAPI.args = {
-	fastAPI: true,
-	useAxios: true,
-}
+// export const SlowWithAxios = Template.bind({})
+// SlowWithAxios.args = {
+// 	fastAPI: false,
+// 	useAxios: true,
+// }
+
+// export const FastAPI = Template.bind({})
+// FastAPI.args = {
+// 	fastAPI: true,
+// 	useAxios: true,
+// }

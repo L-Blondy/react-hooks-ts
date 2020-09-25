@@ -9,7 +9,7 @@ function getHook({
 	caseSensitive = false,
 	isAsync = false
 }: UseCacheOptions = {}) {
-	return renderHook(({ staleTime = 100, caseSensitive = false, isAsync = false }: UseCacheOptions) => useCache({ staleTime, caseSensitive }), {
+	return renderHook(({ staleTime = 100, caseSensitive = false, isAsync = false }: UseCacheOptions) => useCache({ staleTime, caseSensitive, isAsync }), {
 		initialProps: { staleTime, caseSensitive, isAsync }
 	})
 }
@@ -40,8 +40,8 @@ describe('useCache', () => {
 
 		expect(cacheResult.value).toBeDefined()
 		expect(cacheResult.value).toBe('myTestValue')
-		expect(cacheResult.updatedOn).toBe(updatedOn)
-		expect(cacheResult.expireDate).toBe(updatedOn + 100)
+		expect(cacheResult.updatedOn - updatedOn).toBeLessThan(5)
+		expect(cacheResult.expireDate).toBe(cacheResult.updatedOn + 100)
 		expect(cacheResult.isStale).toBeFalsy()
 		expect(cacheResult.isAsync).toBeFalsy()
 		expect(cacheResult.age).toBe(Date.now() - updatedOn)
@@ -92,8 +92,7 @@ describe('useCache', () => {
 		result.current.set('').to(0)
 		rerender({ isAsync: true })
 		result.current.set('').to(0)
-
-		expect(result.current.get('')).toBeTruthy()
+		expect(result.current.get('').isAsync).toBeTruthy()
 	})
 
 	it('"caseSensitive" change should reflect', () => {

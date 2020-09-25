@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useMountedState, useRerender } from '../src/hooks'
 
 export default {
-	title: 'components/UseMountedState',
+	title: 'components/useMountedState',
 }
 
 export function Demo(Story) {

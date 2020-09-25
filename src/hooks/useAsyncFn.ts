@@ -78,9 +78,13 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 			})
 			.catch(error => {
 				if (!isMounted() || callID !== lastCallID.current) return
+				error = typeof error === 'string'
+					? { name: 'Error', message: error }
+					: { ...error, name: error.name, message: error.message }
+
 				setState(state => {
 					return ({
-						error: { ...error, name: error.name, message: error.message },
+						error,
 						args,
 						data: withDataResetRef.current ? defaultData : state.data,
 						isPending: false,

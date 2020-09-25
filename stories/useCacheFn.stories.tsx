@@ -6,7 +6,7 @@ export default {
 	title: 'components/useCacheFn',
 	args: {
 		staleTime: Number.MAX_VALUE,
-		disable: true,
+		disable: false,
 		caseSensitive: false,
 		isAsync: false
 	}
@@ -24,7 +24,7 @@ function syncFn(str1: string, str2: string): string {
 }
 
 export const Demo = (options: Options) => {
-	const [ fakeAPIwithCache, cache ] = useCacheFn(options.isAsync ? fakeAPI : syncFn, options)
+	const [ fakeAPIwithCache, cache ] = useCacheFn(options.isAsync ? fakeAPI(1000) : syncFn, options)
 	const [ value, setValue ] = useState<string>()
 	const [ age, setAge ] = useState<number>()
 	const [ arg1, setArg1 ] = useState('')
@@ -34,6 +34,7 @@ export const Demo = (options: Options) => {
 		if (!options.isAsync) {
 			fakeAPIwithCache(arg1, arg2)
 			const cacheContent = cache.get(arg1, arg2)
+			if (!cacheContent) return
 			setValue(cacheContent.value)
 			setAge(cacheContent.age)
 		}
