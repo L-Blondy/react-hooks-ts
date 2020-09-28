@@ -12,7 +12,7 @@ export default {
 export const Demo = ({ withDataReset }) => {
 
 	const [ inputVal, setinputVal ] = useState('')
-	const [ state, execute, cancel ] = useAsyncFn(fakeAPI)
+	const [ execute, state, cancel ] = useAsyncFn(fakeAPI)
 
 	const handleSubmit = (e) => {
 		e.preventDefault()
