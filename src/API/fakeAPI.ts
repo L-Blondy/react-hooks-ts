@@ -7,18 +7,14 @@ const fakeAPI: CancellableAsyncFn<(str1: string, str2?: string) => Promise<strin
 	str2 = ''
 ) => {
 	count++
-	let cancelToken: NodeJS.Timeout;
-	let rejectToken: (reason?: any) => void;
+	let cancelToken: { current?: NodeJS.Timeout } = {}
 
 	fakeAPI.cancel = () => {
-		clearTimeout(cancelToken)
-		console.log(`cancelled execution: ${str1 + str2}`)
-		rejectToken(`cancelled execution: ${str1 + str2}`)
+		cancelToken.current && clearTimeout(cancelToken.current)
 	}
 
 	return new Promise((resolve, reject) => {
-		rejectToken = reject
-		cancelToken = setTimeout(() => {
+		cancelToken.current = setTimeout(() => {
 			console.log('resolved: ' + str1 + str2)
 			count % 2
 				? resolve(str1 + str2)

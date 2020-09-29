@@ -25,6 +25,9 @@ const useDebounce = <T extends SomeFunction>(
 
 		const promise = new Promise<ReturnType<T>>(resolve => {
 			cancel()
+			if (!time)
+				return resolve(callbackRef.current(...args))
+
 			token.current = setTimeout(() => {
 				resolve(callbackRef.current(...args))
 			}, timeRef.current)

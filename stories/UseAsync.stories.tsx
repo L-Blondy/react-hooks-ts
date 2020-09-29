@@ -1,52 +1,46 @@
-import React from 'react'
-// import { UseAsync } from '../src/components/UseAsync'
+import React, { useState } from 'react'
+import { fakeAPI } from '../src/API'
+import { useAsync } from '../src/hooks'
 
 export default {
-	title: 'components/UseAsync',
+	title: 'components/useAsync',
 	args: {
-		withDataReset: false,
-		defaultData: null,
+		defaultData: 'this is my default data',
 		debounceTime: 0,
 		throttleTime: 0,
 		throttleLimit: 1,
-		staleTime: 5000,
+		withTrailing: false,
+		staleTime: Number.MAX_VALUE,
 		disableCache: false,
 		caseSensitiveCache: false,
-		withTrailing: false
+		resetDataOnError: true,
+		resetDataOnCancel: false
 	}
 }
 
-export const Demo = () => null
+export const Demo = ({ resetDataOnCancel, ...options }) => {
+	const [ inputVal, setInputVal ] = useState('default')
+	const [ execute, state, cancel ] = useAsync(fakeAPI, options)
 
-// const Template = ({
-// 	useAxios,
-// 	withDataReset,
-// 	fastAPI,
-// 	...props
-// }) => (
-// 		<UseAsync
-// 			useAxios={useAxios}
-// 			fastAPI={fastAPI}
-// 			withDataReset={withDataReset}
-// 			options={{ ...props }}
-// 		/>
-// 	)
+	const handleSubmit = (e) => {
+		e.preventDefault()
+		execute(inputVal)
+	}
 
-// export const SlowWithFetch = Template.bind({})
-// SlowWithFetch.args = {
-// 	fastAPI: false,
-// 	useAxios: false,
-
-// }
-
-// export const SlowWithAxios = Template.bind({})
-// SlowWithAxios.args = {
-// 	fastAPI: false,
-// 	useAxios: true,
-// }
-
-// export const FastAPI = Template.bind({})
-// FastAPI.args = {
-// 	fastAPI: true,
-// 	useAxios: true,
-// }
+	return (
+		<div>
+			<form onSubmit={handleSubmit}>
+				<input value={inputVal} onChange={e => setInputVal(e.target.value)} />
+				<button type='submit'>Fetch</button>
+				<button type='button' onClick={() => cancel(resetDataOnCancel)}>Cancel</button>
+			</form>
+			<div>
+				<h1>Data: {String(state.data)}</h1>
+				<h1>Error: {JSON.stringify(state.error)}</h1>
+				<h1>Status: {state.status}</h1>
+				<h1>isPending: {String(state.isPending)}</h1>
+				<h1>Args: {String(state.args)}</h1>
+			</div>
+		</div>
+	)
+}

@@ -11,7 +11,7 @@ export default {
 
 export const Demo = ({ withDataReset }) => {
 
-	const [ inputVal, setinputVal ] = useState('')
+	const [ inputVal, setInputVal ] = useState('')
 	const [ execute, state, cancel ] = useAsyncFn(fakeAPI)
 
 	const handleSubmit = (e) => {
@@ -22,7 +22,7 @@ export const Demo = ({ withDataReset }) => {
 	return (
 		<div>
 			<form onSubmit={handleSubmit}>
-				<input value={inputVal} onChange={e => setinputVal(e.target.value)} />
+				<input value={inputVal} onChange={e => setInputVal(e.target.value)} />
 				<button type='submit'>Fetch</button>
 				<button type='button' onClick={() => cancel(withDataReset)}>Cancel</button>
 			</form>

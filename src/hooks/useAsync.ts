@@ -9,7 +9,8 @@ export interface UseAsyncOptions<Cb> {
 	withTrailing?: boolean,
 	staleTime?: number,
 	disableCache?: boolean,
-	caseSensitiveCache?: boolean
+	caseSensitiveCache?: boolean,
+	resetDataOnError?: boolean
 }
 
 const useAsync = <Cb extends CancellableAsyncFn>(
@@ -22,7 +23,8 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		withTrailing: trailing = false,
 		staleTime = Number.MAX_VALUE,
 		disableCache = false,
-		caseSensitiveCache = false
+		caseSensitiveCache = false,
+		resetDataOnError = true
 	}: UseAsyncOptions<Cb> = {}
 ) => {
 
@@ -34,9 +36,11 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		isAsync: true
 	});
 	cached.cancel = callback.cancel
-	const [ state, execute, cancelAsync, setState ] = useAsyncFn(cached, {
-		defaultData
+	const [ execute, state, cancelAsync, setState ] = useAsyncFn(cached, {
+		defaultData,
+		resetDataOnError
 	})
+
 	const [ throttled, cancelTrailingThrottle ] = useThrottle(execute, throttleTime, {
 		trailing,
 		limit: throttleLimit,
@@ -49,7 +53,7 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		cancelTrailingThrottle()
 	}
 
-	return [ state, throttled, cancel, setState ] as const
+	return [ throttled, state, cancel, setState ] as const
 }
 
 export default useAsync;

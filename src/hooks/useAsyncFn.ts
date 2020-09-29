@@ -15,7 +15,6 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 		resetDataOnError = true
 	}: UseAsyncFnOptions<Cb> = {}
 ) {
-
 	type ReturnTuple = [
 		(...args: Parameters<Cb>) => Promise<void>,
 		{
@@ -59,6 +58,17 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 		resetDataOnCancelRef.current = withDataReset
 		callbackRef.current.cancel?.()
 		hasBeenCancelledRef.current = true
+
+		setState(state => state.status === 'pending'
+			? ({
+				isPending: false,
+				status: 'cancelled',
+				error: null,
+				data: resetDataOnCancelRef.current ? defaultData : state.data,
+				args: null
+			})
+			: state
+		)
 	}, [ callbackRef, callbackRef.current ])
 
 	const execute: ReturnTuple[ 0 ] = useCallback((...args: Parameters<Cb>) => {
@@ -74,7 +84,8 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 
 		return new Promise(resolve => callbackRef.current(...args)
 			.then((data: AsyncReturnType<Cb>) => {
-				if (!isMounted() || callID !== lastCallID.current) return
+				if (!isMounted() || callID !== lastCallID.current || hasBeenCancelledRef.current) return
+
 				setState({
 					data,
 					args,
@@ -84,18 +95,7 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 				})
 			})
 			.catch(error => {
-				if (!isMounted() || callID !== lastCallID.current) return
-
-				if (hasBeenCancelledRef.current) {
-					setState(state => ({
-						isPending: false,
-						status: 'cancelled',
-						error: null,
-						data: resetDataOnCancelRef.current ? defaultData : state.data,
-						args
-					}))
-					return
-				}
+				if (!isMounted() || callID !== lastCallID.current || hasBeenCancelledRef.current) return
 
 				error = typeof error === 'string'
 					? { name: 'Error', message: error }
