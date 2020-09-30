@@ -25,6 +25,7 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 			args: null | Parameters<Cb>
 		},
 		(withDataReset: boolean) => void,
+		() => void,
 		SetState<{
 			isPending: boolean,
 			status: 'idle' | 'pending' | 'success' | 'error' | 'cancelled',
@@ -35,6 +36,7 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 	]
 
 	const resetDataOnCancelRef = useRef(false)
+	const defaultDataRef = useRef(defaultData)
 	const callbackRef = useRef(callback)
 	const lastCallID = useRef(0)
 	const resetDataOnErrorRef = useRef(resetDataOnError)
@@ -52,6 +54,7 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 	useEffect(() => {
 		callbackRef.current = callback
 		resetDataOnErrorRef.current = resetDataOnError
+		defaultDataRef.current = defaultData
 	})
 
 	const cancel: ReturnTuple[ 2 ] = useCallback((withDataReset: boolean) => {
@@ -64,12 +67,22 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 				isPending: false,
 				status: 'cancelled',
 				error: null,
-				data: resetDataOnCancelRef.current ? defaultData : state.data,
+				data: resetDataOnCancelRef.current ? defaultDataRef.current : state.data,
 				args: null
 			})
 			: state
 		)
 	}, [ callbackRef, callbackRef.current ])
+
+	const resetState = useCallback(() => {
+		setState({
+			isPending: false,
+			status: 'idle',
+			error: null,
+			data: defaultDataRef.current,
+			args: null
+		})
+	}, [])
 
 	const execute: ReturnTuple[ 0 ] = useCallback((...args: Parameters<Cb>) => {
 		callbackRef.current.cancel?.()
@@ -104,16 +117,16 @@ const useAsyncFn = function <Cb extends CancellableAsyncFn>(
 				setState(state => ({
 					error,
 					args,
-					data: resetDataOnErrorRef.current ? defaultData : state.data,
+					data: resetDataOnErrorRef.current ? defaultDataRef.current : state.data,
 					isPending: false,
 					status: 'error',
 				}))
 			})
 			.finally(resolve)
 		)
-	}, [ setState, isMounted, defaultData ])
+	}, [ isMounted ])
 
-	return [ execute, state, cancel, setState ] as ReturnTuple
+	return [ execute, state, cancel, resetState, setState ] as ReturnTuple
 }
 
 export default useAsyncFn;

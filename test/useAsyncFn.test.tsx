@@ -3,6 +3,11 @@ import { renderHook, act } from '@testing-library/react-hooks'
 import useAsyncFn from '../src/hooks/useAsyncFn'
 import { CancellableAsyncFn } from '../src/types'
 
+interface GetHookOptions {
+	defaultData?: any,
+	resetDataOnError?: boolean
+}
+
 const cancellableFn: CancellableAsyncFn = (x) => {
 	let cancelToken
 
@@ -20,7 +25,7 @@ function getHook(
 	{
 		defaultData = null,
 		resetDataOnError = true
-	} = {}) {
+	}: GetHookOptions = {}) {
 	const spy = spyType === 'resolve'
 		? jest.fn((...x: any[]) => Promise.resolve(x))
 		: spyType === 'reject'
@@ -32,7 +37,7 @@ function getHook(
 		renderHook(({
 			defaultData = null,
 			resetDataOnError = true
-		}) => useAsyncFn(spy, { defaultData, resetDataOnError }), {
+		}: GetHookOptions) => useAsyncFn(spy, { defaultData, resetDataOnError }), {
 			initialProps: { defaultData, resetDataOnError }
 		})
 	] as const
@@ -40,11 +45,12 @@ function getHook(
 
 describe('useAsyncFn', () => {
 
-	it('Should return [execute, state, cancel, setState]', () => {
+	it('Should return [execute, state, cancel,resetState, setState]', () => {
 		const [ , hook ] = getHook()
-		const [ execute, state, cancel, setState ] = hook.result.current
+		const [ execute, state, cancel, resetState, setState ] = hook.result.current
 
 		//state
+		expect(Object.keys(state).length).toBe(5)
 		expect(state.args).toBeNull()
 		expect(state.data).toBeNull()
 		expect(state.error).toBeNull()
@@ -54,13 +60,62 @@ describe('useAsyncFn', () => {
 		//execute, cancel, setState
 		expect(typeof execute).toBe('function')
 		expect(typeof cancel).toBe('function')
+		expect(typeof resetState).toBe('function')
 		expect(typeof setState).toBe('function')
 	})
 
-	it('"state.data" should be "defaultData" on mount', () => {
-		const [ , hook ] = getHook('resolve', { defaultData: [] })
-		const [ , state ] = hook.result.current
-		expect(state.data).toEqual([])
+	it('"execute","cancel","resetState" and "setState" should return the same instance on rerender', () => {
+		const [ , { result, rerender } ] = getHook()
+		const [ execute, , cancel, resetState, setState ] = result.current
+		rerender()
+		expect(result.current[ 0 ]).toBe(execute)
+		expect(result.current[ 2 ]).toBe(cancel)
+		expect(result.current[ 3 ]).toBe(resetState)
+		expect(result.current[ 4 ]).toBe(setState)
+	})
+
+	it('"resetState" should be aware of "defaultData" change', () => {
+		const [ , { result, rerender } ] = getHook()
+		rerender({ defaultData: 1 })
+		const [ , , , resetState ] = result.current
+
+		act(() => {
+			resetState()
+		})
+		expect(result.current[ 1 ].data).toBe(1)
+	})
+
+	describe('options', () => {
+
+		it('"state.data" should match option "defaultData" on mount', () => {
+			const [ , hook ] = getHook('resolve', { defaultData: [] })
+			const [ , state ] = hook.result.current
+			expect(state.data).toEqual([])
+		})
+
+		it('"defaultData" change should reflect', () => {
+			const [ , hook ] = getHook('resolve', { defaultData: null })
+			const [ execute, , cancel ] = hook.result.current
+
+			hook.rerender({ defaultData: [] })
+			act(() => {
+				execute()
+				cancel(true)
+			})
+			expect(hook.result.current[ 1 ].data).toEqual([])
+		})
+
+		it('"resetDataOnError" change should reflect', async done => {
+			const [ , hook ] = getHook('reject', { resetDataOnError: true })
+			const [ execute, , , , setState ] = hook.result.current
+			hook.rerender({ resetDataOnError: false })
+			await act(async () => {
+				setState({ data: 'some dummy data' })
+				await execute()
+			})
+			expect(hook.result.current[ 1 ].data).toBe('some dummy data')
+			done()
+		})
 	})
 
 	describe('status:pending', () => {
@@ -166,7 +221,7 @@ describe('useAsyncFn', () => {
 
 		it('Resolution should set "state.error":"null"', async done => {
 			const [ , { result } ] = getHook()
-			const [ execute, , , setState ] = result.current
+			const [ execute, , , , setState ] = result.current
 
 			act(() => {
 				setState({
@@ -222,7 +277,7 @@ describe('useAsyncFn', () => {
 
 		it('{resetDataOnError:true} should reset data on error', async done => {
 			const [ , { result } ] = getHook('reject')
-			const [ execute, , , setState ] = result.current
+			const [ execute, , , , setState ] = result.current
 
 			act(() => {
 				setState({ data: [ 'someData' ] })
@@ -237,7 +292,7 @@ describe('useAsyncFn', () => {
 
 		it('{resetDataOnError:false} should NOT reset data on error', async done => {
 			const [ , { result } ] = getHook('reject', { resetDataOnError: false })
-			const [ execute, , , setState ] = result.current
+			const [ execute, , , , setState ] = result.current
 
 			act(() => {
 				setState({ data: [ 'someData' ] })
@@ -287,7 +342,7 @@ describe('useAsyncFn', () => {
 
 		it('cancel(...) should set "state.error":"null"', () => {
 			const [ , { result } ] = getHook('cancel')
-			const [ execute, , cancel, setState ] = result.current
+			const [ execute, , cancel, , setState ] = result.current
 
 			act(() => {
 				setState({ error: { name: 'SomeError', message: 'some error message' } })
@@ -302,7 +357,7 @@ describe('useAsyncFn', () => {
 
 		it('cancel(true) should reset "state.data"', () => {
 			let [ , { result } ] = getHook('cancel')
-			let [ execute, , cancel, setState ] = result.current
+			let [ execute, , cancel, , setState ] = result.current
 
 			act(() => {
 				setState({ data: 'someData' })
@@ -317,7 +372,7 @@ describe('useAsyncFn', () => {
 
 		it('cancel(false) should NOT reset "state.data"', () => {
 			let [ , { result } ] = getHook('cancel')
-			let [ execute, , cancel, setState ] = result.current
+			let [ execute, , cancel, , setState ] = result.current
 
 			act(() => {
 				setState({ data: 'someData' })

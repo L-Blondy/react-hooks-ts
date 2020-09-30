@@ -1,3 +1,4 @@
+import { useCallback, useRef, useEffect } from 'react'
 import { useAsyncFn, useDebounce, useCacheFn, useThrottle } from './';
 import { CancellableAsyncFn, AsyncReturnType } from '../types';
 
@@ -27,6 +28,11 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		resetDataOnError = true
 	}: UseAsyncOptions<Cb> = {}
 ) => {
+	const callbackRef = useRef(callback)
+
+	useEffect(() => {
+		callbackRef.current = callback
+	})
 
 	const [ debounced, cancelDebounce ] = useDebounce(callback, debounceTime);
 	const [ cached ] = useCacheFn(debounced as CancellableAsyncFn<typeof debounced>, {
@@ -36,7 +42,7 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		isAsync: true
 	});
 	cached.cancel = callback.cancel
-	const [ execute, state, cancelAsync, setState ] = useAsyncFn(cached, {
+	const [ execute, state, cancelAsync, resetState, setState ] = useAsyncFn(cached, {
 		defaultData,
 		resetDataOnError
 	})
@@ -46,14 +52,14 @@ const useAsync = <Cb extends CancellableAsyncFn>(
 		limit: throttleLimit,
 	});
 
-	const cancel = (withDataReset: boolean = false) => {
+	const cancel = useCallback((withDataReset: boolean = false) => {
 		cancelDebounce();
-		cached.cancel = callback.cancel
+		cached.cancel = callbackRef.current.cancel
 		cancelAsync(withDataReset)
 		cancelTrailingThrottle()
-	}
+	}, [ cached, cancelAsync, cancelDebounce, cancelTrailingThrottle ])
 
-	return [ throttled, state, cancel, setState ] as const
+	return [ throttled, state, cancel, resetState, setState ] as const
 }
 
 export default useAsync;
